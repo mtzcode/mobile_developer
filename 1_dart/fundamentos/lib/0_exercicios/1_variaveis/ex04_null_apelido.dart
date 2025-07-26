@@ -12,7 +12,8 @@ void main() {
 
   // Variável PODE ser nula (usando ?)
   String? apelido; // ✅ Correto - inicializada como null
-  String? cidade = null; // ✅ Também correto - explicitamente null
+  // ignore: unused_local_variable
+  String? cidade; // ✅ Também correto - explicitamente null
 
   print("Nome: $nome");
   print("Apelido: ${apelido ?? 'sem apelido'}");
@@ -21,6 +22,7 @@ void main() {
 
   // 1. Operador de acesso seguro (?.) - não causa erro se for null
   String? cidade2;
+  // ignore: dead_code
   print(cidade2?.toUpperCase()); // ✅ Imprime null (sem erro)
 
   // Comparação com acesso direto (que causaria erro):
@@ -32,10 +34,11 @@ void main() {
 
   // 3. Operador de asserção (!) - "garante" que não é null (use com cuidado!)
   String? nome3 = "Carlos";
-  print(nome3!.length); // ✅ OK - sabemos que não é null
+  print(nome3.length); // ✅ OK - sabemos que não é null
 
   // CUIDADO: Se for null, causa erro em tempo de execução
-  String? nome4 = null;
+  // ignore: unused_local_variable
+  String? nome4;
   // print(nome4!.length); // ❌ ERRO em tempo de execução - crash!
 
   // ===== RESUMO DOS CONCEITOS =====

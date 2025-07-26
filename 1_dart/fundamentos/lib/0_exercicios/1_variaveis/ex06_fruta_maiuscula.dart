@@ -2,5 +2,5 @@
 
 void main() {
   String? fruta = "banana";
-  print(fruta?.toUpperCase());
+  print(fruta.toUpperCase());
 }

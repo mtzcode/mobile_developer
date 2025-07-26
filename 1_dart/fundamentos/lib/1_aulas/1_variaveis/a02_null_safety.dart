@@ -9,6 +9,7 @@ void main() {
  //Operador de acesso seguro:
 
 String? cidade;
+// ignore: dead_code
 print(cidade?.toUpperCase()); // Não dá erro, apenas imprime null
 
 //Operador de valor padrão: ??
@@ -17,9 +18,9 @@ print(nome2 ?? "Desconhecido"); // imprime "Desconhecido"
 
 //Operador de asserção ! (use com cuidado!)
 String? nome3 = "Carlos";
-print(nome3!.length); // OK
+print(nome3.length); // OK
 
-String? nome4 = null;
+String? nome4;
 print(nome4!.length); // ERRO em tempo de execução
 }
 

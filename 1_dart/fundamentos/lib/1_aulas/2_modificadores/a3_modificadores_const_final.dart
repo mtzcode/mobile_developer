@@ -18,7 +18,7 @@ void main() {
   // data2 = DateTime.now(); // Não funciona!
 
   // ===== VAR - Pode ser inicializada depois =====
-  var contador; // ✅ Pode ser declarada sem inicialização
+  int contador; // ✅ Pode ser declarada sem inicialização
   contador = 0; // ✅ Pode ser atribuída depois
   contador = 1; // ✅ Pode ser reatribuída
   print("Var: $contador");
