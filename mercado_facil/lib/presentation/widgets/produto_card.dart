@@ -143,14 +143,20 @@ class ProdutoCard extends StatelessWidget {
     // Envolver o conteúdo do card em GestureDetector para abrir o modal
     return GestureDetector(
       onTap: showProductModal,
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: 0,
+            ),
+          ],
         ),
         clipBehavior: Clip.hardEdge,
-        margin: const EdgeInsets.all(8),
-        color: colorScheme.surface,
         child: Stack(
           children: [
             Padding(
@@ -163,8 +169,8 @@ class ProdutoCard extends StatelessWidget {
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: colorScheme.tertiary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: produto.imagemUrl.isNotEmpty
                           ? Image.network(
@@ -191,49 +197,76 @@ class ProdutoCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'R\$ ${(produto.precoPromocional ?? produto.preco).toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: produto.precoPromocional != null
-                          ? Colors.red.shade800
-                          : Colors.green.shade700,
-                      decoration: produto.precoPromocional != null
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                  ),
-                  if (produto.precoPromocional != null)
-                    Text(
-                      'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: colorScheme.secondary,
+                  const SizedBox(height: 6),
+                  // Preços com ícone
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.attach_money_rounded,
+                        size: 18,
+                        color: produto.precoPromocional != null
+                            ? Colors.green.shade600
+                            : colorScheme.primary,
                       ),
-                    ),
-                  const SizedBox(height: 8),
+                      const SizedBox(width: 4),
+                      if (produto.precoPromocional != null) ..[
+                        Text(
+                          'R\$ ${produto.preco.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: Colors.green.shade600,
+                          ),
+                        ),
+                      ] else
+                        Text(
+                          'R\$ ${produto.preco.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: onAdicionarAoCarrinho,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
+                        backgroundColor: colorScheme.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        elevation: 2,
+                        shadowColor: colorScheme.primary.withValues(alpha: 0.3),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_shopping_cart, size: 16, color: Colors.white),
-                          const SizedBox(width: 6),
-                          const Text('Adicionar', style: TextStyle(color: Colors.white)),
+                          Icon(Icons.add_shopping_cart_rounded, size: 18, color: Colors.white),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Adicionar',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
                         ],
                       ),
                     ),
