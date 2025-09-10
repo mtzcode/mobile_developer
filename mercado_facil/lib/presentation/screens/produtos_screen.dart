@@ -823,14 +823,42 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                       )
                     : Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: GridView.builder(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.65,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Calcula o número de colunas baseado na largura da tela
+                            int crossAxisCount;
+                            double childAspectRatio;
+                            
+                            if (constraints.maxWidth < 600) {
+                              // Mobile: 2 colunas
+                              crossAxisCount = 2;
+                              childAspectRatio = 0.65;
+                            } else if (constraints.maxWidth < 900) {
+                              // Tablet: 3 colunas
+                              crossAxisCount = 3;
+                              childAspectRatio = 0.7;
+                            } else if (constraints.maxWidth < 1200) {
+                              // Desktop pequeno: 4 colunas
+                              crossAxisCount = 4;
+                              childAspectRatio = 0.75;
+                            } else if (constraints.maxWidth < 1600) {
+                              // Desktop médio: 5 colunas
+                              crossAxisCount = 5;
+                              childAspectRatio = 0.8;
+                            } else {
+                              // Desktop grande: 6 colunas
+                              crossAxisCount = 6;
+                              childAspectRatio = 0.85;
+                            }
+                            
+                            return GridView.builder(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                childAspectRatio: childAspectRatio,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
                           itemCount: _produtosExibidos.length,
                           itemBuilder: (context, index) {
                             final produto = _produtosExibidos[index];
@@ -850,6 +878,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                                 if (!mounted) return;
                                 final userProvider = Provider.of<UserProvider>(context, listen: false);
                                 final userId = userProvider.usuarioLogado?.id;
+                                final messenger = ScaffoldMessenger.of(context);
                                 
                                 if (userId != null) {
                                   try {
@@ -861,34 +890,44 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                                       await firestoreService.adicionarFavorito(userId, produto.id);
                                     }
                                     
-                                    if (mounted) {
-                                      setState(() {
-                                        produto.favorito = !produto.favorito;
-                                      });
-                                      
-                                      if (mounted) {
-                                        showAppSnackBar(
-                                          context,
-                                          produto.favorito 
-                                              ? '${produto.nome} adicionado aos favoritos!' 
-                                              : '${produto.nome} removido dos favoritos!',
-                                          icon: produto.favorito ? Icons.favorite : Icons.favorite_border,
-                                          backgroundColor: produto.favorito ? Colors.red.shade600 : Colors.orange.shade600,
-                                        );
-                                      }
-                                    }
+                                    if (!mounted) return;
+                                    setState(() {
+                                      produto.favorito = !produto.favorito;
+                                    });
+                                    
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            Icon(produto.favorito ? Icons.favorite : Icons.favorite_border, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text(produto.favorito 
+                                                ? '${produto.nome} adicionado aos favoritos!' 
+                                                : '${produto.nome} removido dos favoritos!'),
+                                          ],
+                                        ),
+                                        backgroundColor: produto.favorito ? Colors.red.shade600 : Colors.orange.shade600,
+                                      ),
+                                    );
                                   } catch (e) {
-                                    if (mounted) {
-                                      showAppSnackBar(
-                                        context,
-                                        'Erro ao atualizar favoritos',
-                                        icon: Icons.error,
+                                    if (!mounted) return;
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            Icon(Icons.error, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text('Erro ao atualizar favoritos'),
+                                          ],
+                                        ),
                                         backgroundColor: Colors.red.shade600,
-                                      );
-                                    }
+                                      ),
+                                    );
                                   }
                                 }
                               },
+                            );
+                          },
                             );
                           },
                         ),

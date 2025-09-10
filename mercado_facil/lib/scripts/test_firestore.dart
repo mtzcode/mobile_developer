@@ -9,59 +9,59 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    print('Inicializando Firebase...');
+    debugPrint('Inicializando Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase inicializado com sucesso!');
+    debugPrint('Firebase inicializado com sucesso!');
     
     // Testar conexão com Firestore
     final firestore = FirebaseFirestore.instance;
-    print('Testando conexão com Firestore...');
+    debugPrint('Testando conexão com Firestore...');
     
     // Verificar produtos existentes
     final produtosSnapshot = await firestore.collection('produtos').get();
-    print('Produtos encontrados no Firestore: ${produtosSnapshot.docs.length}');
+    debugPrint('Produtos encontrados no Firestore: ${produtosSnapshot.docs.length}');
     
     if (produtosSnapshot.docs.isEmpty) {
-      print('Nenhum produto encontrado. Populando com dados mock...');
+      debugPrint('Nenhum produto encontrado. Populando com dados mock...');
       
       // Popular com dados mock
       await ProdutosService.migrarDadosMock();
       
       // Verificar novamente
       final novoSnapshot = await firestore.collection('produtos').get();
-      print('Produtos adicionados: ${novoSnapshot.docs.length}');
+      debugPrint('Produtos adicionados: ${novoSnapshot.docs.length}');
       
       // Mostrar alguns produtos
       for (var doc in novoSnapshot.docs.take(3)) {
         final data = doc.data();
-        print('Produto: ${data['nome']} - R\$ ${data['preco']}');
+        debugPrint('Produto: ${data['nome']} - R\$ ${data['preco']}');
       }
     } else {
-      print('Produtos já existem no Firestore:');
+      debugPrint('Produtos já existem no Firestore:');
       for (var doc in produtosSnapshot.docs.take(3)) {
         final data = doc.data();
-        print('Produto: ${data['nome']} - R\$ ${data['preco']}');
+        debugPrint('Produto: ${data['nome']} - R\$ ${data['preco']}');
       }
     }
     
     // Testar carregamento através do serviço
-    print('\nTestando ProdutosService...');
+    debugPrint('\nTestando ProdutosService...');
     final produtos = await ProdutosService.carregarProdutosComCache(forcarAtualizacao: true);
-    print('Produtos carregados pelo serviço: ${produtos.length}');
+    debugPrint('Produtos carregados pelo serviço: ${produtos.length}');
     
     if (produtos.isNotEmpty) {
-      print('Primeiros 3 produtos:');
+      debugPrint('Primeiros 3 produtos:');
       for (var produto in produtos.take(3)) {
-        print('- ${produto.nome}: R\$ ${produto.preco}');
+        debugPrint('- ${produto.nome}: R\$ ${produto.preco}');
       }
     }
     
-    print('\nTeste concluído com sucesso!');
+    debugPrint('\nTeste concluído com sucesso!');
     
   } catch (e, stackTrace) {
-    print('Erro durante o teste: $e');
-    print('Stack trace: $stackTrace');
+    debugPrint('Erro durante o teste: $e');
+    debugPrint('Stack trace: $stackTrace');
   }
 }

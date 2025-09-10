@@ -2,17 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/produto.dart';
 import '../../data/services/carrinho_provider.dart';
+import '../../data/services/user_provider.dart';
+import '../../data/services/firestore_service.dart';
 import '../widgets/produto_card.dart';
 import '../../core/utils/snackbar_utils.dart';
 
-class FavoritosScreen extends StatelessWidget {
+class FavoritosScreen extends StatefulWidget {
   final List<Produto> produtos;
   const FavoritosScreen({super.key, required this.produtos});
 
   @override
+  State<FavoritosScreen> createState() => _FavoritosScreenState();
+}
+
+class _FavoritosScreenState extends State<FavoritosScreen> {
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final favoritos = produtos.where((p) => p.favorito).toList();
+    final favoritos = widget.produtos.where((p) => p.favorito).toList();
     
     return Scaffold(
       appBar: AppBar(
@@ -97,14 +105,42 @@ class FavoritosScreen extends StatelessWidget {
                         ],
                       ),
                     )
-                  : GridView.builder(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.8,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Calcula o número de colunas baseado na largura da tela
+                        int crossAxisCount;
+                        double childAspectRatio;
+                        
+                        if (constraints.maxWidth < 600) {
+                          // Mobile: 2 colunas
+                          crossAxisCount = 2;
+                          childAspectRatio = 0.8;
+                        } else if (constraints.maxWidth < 900) {
+                          // Tablet: 3 colunas
+                          crossAxisCount = 3;
+                          childAspectRatio = 0.85;
+                        } else if (constraints.maxWidth < 1200) {
+                          // Desktop pequeno: 4 colunas
+                          crossAxisCount = 4;
+                          childAspectRatio = 0.9;
+                        } else if (constraints.maxWidth < 1600) {
+                          // Desktop médio: 5 colunas
+                          crossAxisCount = 5;
+                          childAspectRatio = 0.95;
+                        } else {
+                          // Desktop grande: 6 colunas
+                          crossAxisCount = 6;
+                          childAspectRatio = 1.0;
+                        }
+                        
+                        return GridView.builder(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            childAspectRatio: childAspectRatio,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
                       itemCount: favoritos.length,
                       itemBuilder: (context, index) {
                         final produto = favoritos[index];
@@ -120,10 +156,53 @@ class FavoritosScreen extends StatelessWidget {
                               backgroundColor: Colors.green.shade600,
                             );
                           },
-                          onToggleFavorito: () {
-                            // Atualizar a tela quando remover dos favoritos
-                            (context as Element).markNeedsBuild();
+                          onToggleFavorito: () async {
+                            final userProvider = Provider.of<UserProvider>(context, listen: false);
+                            final userId = userProvider.usuarioLogado?.id;
+                            final messenger = ScaffoldMessenger.of(context);
+                            
+                            if (userId != null) {
+                              try {
+                                final firestoreService = FirestoreService();
+                                await firestoreService.removerFavorito(userId, produto.id);
+                                
+                                // Atualizar o estado local
+                                if (!mounted) return;
+                                setState(() {
+                                  produto.favorito = false;
+                                });
+                                
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.favorite_border, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('${produto.nome} removido dos favoritos!'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.orange.shade600,
+                                  ),
+                                );
+                              } catch (e) {
+                                if (!mounted) return;
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.error, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Erro ao remover dos favoritos'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.red.shade600,
+                                  ),
+                                );
+                              }
+                            }
                           },
+                        );
+                      },
                         );
                       },
                     ),
@@ -134,26 +213,68 @@ class FavoritosScreen extends StatelessWidget {
     );
   }
 
-  void _adicionarTodosAoCarrinho(BuildContext context, List<Produto> favoritos) {
+  void _adicionarTodosAoCarrinho(BuildContext context, List<Produto> favoritos) async {
     final carrinhoProvider = Provider.of<CarrinhoProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.usuarioLogado?.id;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     
     // Adicionar todos os produtos favoritos ao carrinho
     for (final produto in favoritos) {
       carrinhoProvider.adicionarProduto(produto);
     }
     
+    // Remover todos dos favoritos
+    if (userId != null) {
+      try {
+        final firestoreService = FirestoreService();
+        for (final produto in favoritos) {
+          await firestoreService.removerFavorito(userId, produto.id);
+          produto.favorito = false;
+        }
+        
+        // Atualizar a tela
+        if (!mounted) return;
+        setState(() {});
+      } catch (e) {
+        // Se houver erro ao remover favoritos, apenas mostrar aviso
+        if (!mounted) return;
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Itens adicionados ao carrinho, mas houve erro ao limpar favoritos'),
+              ],
+            ),
+            backgroundColor: Colors.orange.shade600,
+          ),
+        );
+        return;
+      }
+    }
+    
     // Mostrar confirmação
-    showAppSnackBar(
-      context,
-      '${favoritos.length} ${favoritos.length == 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho!',
-      icon: Icons.shopping_cart,
-      backgroundColor: Colors.green.shade600,
-      duration: const Duration(seconds: 3),
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.shopping_cart, color: Colors.white),
+            SizedBox(width: 8),
+            Text('${favoritos.length} ${favoritos.length == 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho e removidos dos favoritos!'),
+          ],
+        ),
+        backgroundColor: Colors.green.shade600,
+        duration: const Duration(seconds: 3),
+      ),
     );
     
     // Opcional: Navegar para o carrinho
     showDialog(
-      context: context,
+      context: navigator.context,
       builder: (context) => AlertDialog(
         title: const Text('Itens Adicionados!'),
         content: Text(

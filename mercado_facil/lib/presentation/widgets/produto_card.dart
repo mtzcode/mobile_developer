@@ -192,17 +192,9 @@ class ProdutoCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
-                // Preços com ícone
+                // Preços
                 Row(
                   children: [
-                    Icon(
-                      Icons.attach_money_rounded,
-                      size: 18,
-                      color: produto.precoPromocional != null
-                          ? Colors.green.shade600
-                          : colorScheme.primary,
-                    ),
-                    const SizedBox(width: 4),
                     Expanded(
                       child: Row(
                         children: [
@@ -223,10 +215,10 @@ class ProdutoCard extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 15,
-                                  color: Colors.green.shade600,
+                                  color: Colors.red,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),

@@ -24,13 +24,36 @@ class OfertasScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: ofertas.isEmpty
             ? const Center(child: Text('Nenhum produto em oferta.'))
-            : GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.8,
-                  crossAxisSpacing: 24,
-                  mainAxisSpacing: 24,
-                ),
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  int crossAxisCount;
+                  double childAspectRatio;
+                  
+                  if (constraints.maxWidth < 600) {
+                    // Mobile: 2 colunas
+                    crossAxisCount = 2;
+                    childAspectRatio = 0.8;
+                  } else if (constraints.maxWidth < 900) {
+                    // Tablet: 3 colunas
+                    crossAxisCount = 3;
+                    childAspectRatio = 0.75;
+                  } else if (constraints.maxWidth < 1200) {
+                    // Desktop pequeno: 4 colunas
+                    crossAxisCount = 4;
+                    childAspectRatio = 0.7;
+                  } else {
+                    // Desktop grande: 6 colunas
+                    crossAxisCount = 6;
+                    childAspectRatio = 0.65;
+                  }
+                  
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: childAspectRatio,
+                      crossAxisSpacing: 24,
+                      mainAxisSpacing: 24,
+                    ),
                 itemCount: ofertas.length,
                 itemBuilder: (context, index) {
                   final produto = ofertas[index];
@@ -49,6 +72,8 @@ class OfertasScreen extends StatelessWidget {
                       (context as Element).markNeedsBuild();
                       produto.favorito = !produto.favorito;
                     },
+                  );
+                },
                   );
                 },
               ),

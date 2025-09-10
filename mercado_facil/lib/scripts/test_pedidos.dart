@@ -6,8 +6,7 @@ import '../data/services/pedidos_service.dart';
 import '../data/services/produtos_service.dart';
 import '../data/models/pedido.dart';
 import '../data/models/carrinho_item.dart';
-import '../data/models/produto.dart';
-import '../core/utils/logger.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,26 +16,26 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ Firebase inicializado com sucesso');
+    debugPrint('✅ Firebase inicializado com sucesso');
     
     // Testar conexão com Firestore
     final firestore = FirebaseFirestore.instance;
     await firestore.enableNetwork();
-    print('✅ Conexão com Firestore estabelecida');
+    debugPrint('✅ Conexão com Firestore estabelecida');
     
     // Testar funcionalidade de pedidos
     await testarPedidos();
     
-    print('\n🎉 Teste de pedidos concluído com sucesso!');
+    debugPrint('\n🎉 Teste de pedidos concluído com sucesso!');
     
   } catch (e, stackTrace) {
-    print('❌ Erro durante o teste: $e');
-    print('Stack trace: $stackTrace');
+    debugPrint('❌ Erro durante o teste: $e');
+    debugPrint('Stack trace: $stackTrace');
   }
 }
 
 Future<void> testarPedidos() async {
-  print('\n🔍 Testando funcionalidade de pedidos...');
+  debugPrint('\n🔍 Testando funcionalidade de pedidos...');
   
   final pedidosService = PedidosService();
   
@@ -45,18 +44,18 @@ Future<void> testarPedidos() async {
   
   try {
     // 1. Carregar alguns produtos para criar um pedido de teste
-    print('\n📦 Carregando produtos...');
+    debugPrint('\n📦 Carregando produtos...');
     final produtos = await ProdutosService.carregarProdutosComCache();
     
     if (produtos.isEmpty) {
-      print('⚠️ Nenhum produto encontrado. Criando produtos de teste...');
+      debugPrint('⚠️ Nenhum produto encontrado. Criando produtos de teste...');
       await criarProdutosTeste();
       final produtosNovos = await ProdutosService.carregarProdutosComCache(forcarAtualizacao: true);
       if (produtosNovos.isNotEmpty) {
-        print('✅ Produtos de teste criados: ${produtosNovos.length}');
+        debugPrint('✅ Produtos de teste criados: ${produtosNovos.length}');
       }
     } else {
-      print('✅ Produtos carregados: ${produtos.length}');
+      debugPrint('✅ Produtos carregados: ${produtos.length}');
     }
     
     // 2. Criar itens do carrinho para teste
@@ -66,7 +65,7 @@ Future<void> testarPedidos() async {
       quantidade: 2,
     )).toList();
     
-    print('\n🛒 Criando pedido de teste com ${itensCarrinho.length} itens...');
+    debugPrint('\n🛒 Criando pedido de teste com ${itensCarrinho.length} itens...');
     
     // 3. Criar um pedido de teste
     final enderecoTeste = {
@@ -85,60 +84,60 @@ Future<void> testarPedidos() async {
       observacoes: 'Pedido de teste - pode ser removido',
     );
     
-    print('✅ Pedido criado com sucesso! ID: $pedidoId');
+    debugPrint('✅ Pedido criado com sucesso! ID: $pedidoId');
     
     // 4. Buscar o pedido criado
-    print('\n🔍 Buscando pedido criado...');
+    debugPrint('\n🔍 Buscando pedido criado...');
     final pedidoCriado = await pedidosService.buscarPedido(pedidoId);
     
     if (pedidoCriado != null) {
-      print('✅ Pedido encontrado:');
-      print('   - ID: ${pedidoCriado.id}');
-      print('   - Status: ${pedidoCriado.status.name}');
-      print('   - Total: R\$ ${pedidoCriado.total.toStringAsFixed(2)}');
-      print('   - Itens: ${pedidoCriado.itens.length}');
-      print('   - Data: ${pedidoCriado.dataCriacao}');
+      debugPrint('✅ Pedido encontrado:');
+      debugPrint('   - ID: ${pedidoCriado.id}');
+      debugPrint('   - Status: ${pedidoCriado.status.name}');
+      debugPrint('   - Total: R\$ ${pedidoCriado.total.toStringAsFixed(2)}');
+      debugPrint('   - Itens: ${pedidoCriado.itens.length}');
+      debugPrint('   - Data: ${pedidoCriado.dataCriacao}');
     } else {
-      print('❌ Pedido não encontrado após criação');
+      debugPrint('❌ Pedido não encontrado após criação');
     }
     
     // 5. Buscar todos os pedidos do usuário
-    print('\n📋 Buscando todos os pedidos do usuário...');
+    debugPrint('\n📋 Buscando todos os pedidos do usuário...');
     final pedidosUsuario = await pedidosService.buscarPedidosUsuario(usuarioIdTeste);
-    print('✅ Pedidos encontrados: ${pedidosUsuario.length}');
+    debugPrint('✅ Pedidos encontrados: ${pedidosUsuario.length}');
     
     for (final pedido in pedidosUsuario) {
-      print('   - Pedido ${pedido.id.substring(0, 8)}: ${pedido.status.name} - R\$ ${pedido.total.toStringAsFixed(2)}');
+      debugPrint('   - Pedido ${pedido.id.substring(0, 8)}: ${pedido.status.name} - R\$ ${pedido.total.toStringAsFixed(2)}');
     }
     
     // 6. Testar atualização de status
-    print('\n🔄 Testando atualização de status...');
+    debugPrint('\n🔄 Testando atualização de status...');
     await pedidosService.atualizarStatusPedido(pedidoId, StatusPedido.confirmado);
     
     final pedidoAtualizado = await pedidosService.buscarPedido(pedidoId);
     if (pedidoAtualizado?.status == StatusPedido.confirmado) {
-      print('✅ Status atualizado com sucesso para: ${pedidoAtualizado!.status.name}');
+      debugPrint('✅ Status atualizado com sucesso para: ${pedidoAtualizado!.status.name}');
     } else {
-      print('❌ Falha ao atualizar status');
+      debugPrint('❌ Falha ao atualizar status');
     }
     
     // 7. Testar busca por status
-    print('\n🔍 Testando busca por status...');
+    debugPrint('\n🔍 Testando busca por status...');
     final pedidosConfirmados = await pedidosService.buscarPedidosPorStatus(usuarioIdTeste, StatusPedido.confirmado);
-    print('✅ Pedidos confirmados encontrados: ${pedidosConfirmados.length}');
+    debugPrint('✅ Pedidos confirmados encontrados: ${pedidosConfirmados.length}');
     
     // 8. Testar estatísticas
-    print('\n📊 Testando estatísticas...');
+    debugPrint('\n📊 Testando estatísticas...');
     final estatisticas = await pedidosService.estatisticasUsuario(usuarioIdTeste);
-    print('✅ Estatísticas do usuário:');
-    print('   - Total de pedidos: ${estatisticas['totalPedidos']}');
-    print('   - Valor total gasto: R\$ ${estatisticas['valorTotal'].toStringAsFixed(2)}');
+    debugPrint('✅ Estatísticas do usuário:');
+    debugPrint('   - Total de pedidos: ${estatisticas['totalPedidos']}');
+    debugPrint('   - Valor total gasto: R\$ ${estatisticas['valorTotal'].toStringAsFixed(2)}');
     
-    print('\n✅ Todos os testes de pedidos passaram!');
+    debugPrint('\n✅ Todos os testes de pedidos passaram!');
     
   } catch (e, stackTrace) {
-    print('❌ Erro durante teste de pedidos: $e');
-    print('Stack trace: $stackTrace');
+    debugPrint('❌ Erro durante teste de pedidos: $e');
+    debugPrint('Stack trace: $stackTrace');
   }
 }
 
