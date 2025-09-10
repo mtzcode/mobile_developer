@@ -70,11 +70,12 @@ class ProdutoCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               if (produto.precoPromocional != null)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                Flexible(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                     Text(
-                      'R\$ \${produto.preco.toStringAsFixed(2)}',
+                      'R\$ ${produto.preco.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -84,18 +85,19 @@ class ProdutoCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'R\$ \${produto.precoPromocional!.toStringAsFixed(2)}',
+                      'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.red,
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 )
               else
                 Text(
-                  'R\$ \${produto.preco.toStringAsFixed(2)}',
+                  'R\$ ${produto.preco.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -135,7 +137,9 @@ class ProdutoCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: showProductModal,
-      child: Container(
+      child: AspectRatio(
+        aspectRatio: 0.65,
+        child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -149,9 +153,11 @@ class ProdutoCard extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 Expanded(
                   flex: 3,
                   child: Container(
@@ -197,35 +203,50 @@ class ProdutoCard extends StatelessWidget {
                           : colorScheme.primary,
                     ),
                     const SizedBox(width: 4),
-                    if (produto.precoPromocional != null) ...[
-                      Text(
-                        'R\$ \${produto.preco.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                          decoration: TextDecoration.lineThrough,
-                        ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          if (produto.precoPromocional != null) ...[
+                            Flexible(
+                              child: Text(
+                                'R\$ ${produto.preco.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: Colors.green.shade600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ] else ...[
+                            Flexible(
+                              child: Text(
+                                'R\$ ${produto.preco.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: colorScheme.primary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'R\$ \${produto.precoPromocional!.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: Colors.green.shade600,
-                        ),
-                      ),
-                    ] else ...[
-                      Text(
-                        'R\$ \${produto.preco.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -260,7 +281,8 @@ class ProdutoCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
             // Tag de destaque alinhada à borda do card (fora da imagem)
             if (produto.destaque != null)
@@ -323,6 +345,7 @@ class ProdutoCard extends StatelessWidget {
                 ),
               ),
           ],
+        ),
         ),
       ),
     );
