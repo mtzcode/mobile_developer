@@ -7,6 +7,7 @@ import '../../data/services/carrinho_provider.dart';
 import '../../data/services/user_provider.dart';
 import '../../data/models/produto.dart';
 import 'ofertas_screen.dart';
+import 'favoritos_screen.dart';
 import '../../core/utils/snackbar_utils.dart';
 
 class ProdutosScreen extends StatefulWidget {
@@ -212,27 +213,59 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
       ),
       drawer: Drawer(
         backgroundColor: Colors.white,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
             // DrawerHeader substituído por cabeçalho de usuário
             Consumer<UserProvider>(
               builder: (context, userProvider, child) {
                 final usuario = userProvider.usuarioLogado;
                 return Container(
-                  color: colorScheme.primary,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        colorScheme.primary,
+                        colorScheme.primary.withAlpha(204), // 0.8 * 255 = 204
+                      ],
+                    ),
+                  ),
                   padding: const EdgeInsets.only(top: 32, bottom: 20, left: 16, right: 16),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 32,
-                        backgroundImage: usuario?.fotoUrl != null 
-                          ? NetworkImage(usuario!.fotoUrl!)
-                          : null,
-                        backgroundColor: Colors.white,
-                        child: usuario?.fotoUrl == null 
-                          ? Icon(Icons.person, size: 32, color: colorScheme.primary)
-                          : null,
+                      Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 34,
+                            backgroundColor: Colors.white,
+                            child: CircleAvatar(
+                              radius: 32,
+                              backgroundImage: usuario?.fotoUrl != null 
+                                ? NetworkImage(usuario!.fotoUrl!)
+                                : null,
+                              backgroundColor: Colors.grey[200],
+                              child: usuario?.fotoUrl == null 
+                                ? Icon(Icons.person, size: 32, color: Colors.grey)
+                                : null,
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -263,114 +296,232 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                 );
               },
             ),
-            // Itens de navegação principais
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Meus Dados'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/perfil');
-              },
+            // Seção Minha Conta
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'MINHA CONTA',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/perfil');
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withAlpha(26), // 0.1 * 255 ≈ 26
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.person, color: Colors.blue, size: 20),
+                      ),
+                      title: const Text('Meus Dados'),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/enderecos');
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  child: ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withAlpha(26), // 0.1 * 255 ≈ 26
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.location_on, color: Colors.orange, size: 20),
+                    ),
+                    title: const Text('Endereços'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  ),
+                ),
+              ),
+            ),
+            
+            // Seção Compras
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Text(
+                'COMPRAS',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                  letterSpacing: 1.2,
+                ),
+              ),
             ),
             ListTile(
-              leading: const Icon(Icons.location_on),
-              title: const Text('Endereços'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/enderecos');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withAlpha(26), // 0.1 * 255 ≈ 26
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.receipt_long, color: Colors.purple, size: 20),
+              ),
               title: const Text('Meus Pedidos'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/pedidos');
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.shopping_cart),
-              title: const Text('Carrinho'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/carrinho');
+            Consumer<CarrinhoProvider>(
+              builder: (context, carrinhoProvider, child) {
+                final itemCount = carrinhoProvider.itens.fold(0, (soma, item) => soma + item.quantidade);
+                return ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withAlpha(26), // 0.1 * 255 ≈ 26
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.shopping_cart, color: Colors.green, size: 20),
+                  ),
+                  title: const Text('Carrinho'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (itemCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            itemCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_ios, size: 16),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/carrinho');
+                  },
+                );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.favorite),
-              title: const Text('Favoritos'),
-              onTap: () {
-                Navigator.pop(context);
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            Builder(
+              builder: (context) {
+                List<Produto> favoritos = _produtosExibidos.where((p) => p.favorito).toList();
+                final favoritosCount = favoritos.length;
+                return ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withAlpha(26), // 0.1 * 255 ≈ 26
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.favorite, color: Colors.red, size: 20),
                   ),
-                  builder: (context) {
-                    return StatefulBuilder(
-                      builder: (context, setModalState) {
-                        List<Produto> favoritos = _produtosExibidos.where((p) => p.favorito).toList();
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            left: 20,
-                            right: 20,
-                            top: 20,
-                            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                  title: const Text('Favoritos'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (favoritosCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const Text('Meus Favoritos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 18),
-                              if (favoritos.isEmpty)
-                                const Center(child: Text('Nenhum produto favorito.'))
-                              else
-                                SizedBox(
-                                  height: 350,
-                                  child: GridView.builder(
-                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      childAspectRatio: 0.8,
-                                      crossAxisSpacing: 24,
-                                      mainAxisSpacing: 24,
-                                    ),
-                                    itemCount: favoritos.length,
-                                    itemBuilder: (context, index) {
-                                      final produto = favoritos[index];
-                                      return ProdutoCard(
-                                        produto: produto,
-                                        onAdicionarAoCarrinho: () {
-                                          Provider.of<CarrinhoProvider>(context, listen: false).adicionarProduto(produto);
-                                          showAppSnackBar(
-                                            context,
-                                            '${produto.nome} adicionado ao carrinho!',
-                                            icon: Icons.check_circle,
-                                            backgroundColor: Colors.green.shade600,
-                                          );
-                                        },
-                                        onToggleFavorito: () {
-                                          setModalState(() {});
-                                        },
-                                        key: ValueKey(produto.id),
-                                      );
-                                    },
-                                  ),
-                                ),
-                            ],
+                          child: Text(
+                            favoritosCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        );
-                      },
+                        ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_ios, size: 16),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FavoritosScreen(produtos: _produtosExibidos),
+                      ),
                     );
                   },
                 );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.local_offer),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withAlpha(26), // 0.1 * 255 ≈ 26
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.local_offer, color: Colors.amber, size: 20),
+              ),
               title: const Text('Ofertas'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'NOVO',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_ios, size: 16),
+                ],
+              ),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -381,46 +532,123 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                 );
               },
             ),
+            
+            // Seção Configurações
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Text(
+                'CONFIGURAÇÕES',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
             ListTile(
-              leading: const Icon(Icons.notifications),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.withAlpha(26), // 0.1 * 255 ≈ 26
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.notifications, color: Colors.indigo, size: 20),
+              ),
               title: const Text('Notificações'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/notificacoes');
               },
             ),
-            const Divider(),
+            
+            // Seção Suporte
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Text(
+                'SUPORTE',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
             ListTile(
-              leading: const Icon(Icons.help_outline),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.teal.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.help_outline, color: Colors.teal, size: 20),
+              ),
               title: const Text('Ajuda/Suporte'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/ajuda');
               },
             ),
             ListTile(
-              leading: const Icon(Icons.info_outline),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.cyan.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.info_outline, color: Colors.cyan, size: 20),
+              ),
               title: const Text('Sobre o App'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/sobre');
               },
             ),
-            const Divider(),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Sair'),
-              onTap: () async {
-                final navigator = Navigator.of(context);
-                navigator.pop();
-                final userProvider = Provider.of<UserProvider>(context, listen: false);
-                await userProvider.fazerLogout();
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.pink.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.star_outline, color: Colors.pink, size: 20),
+              ),
+              title: const Text('Avaliar App'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                // Implementar avaliação do app
                 if (mounted) {
-                  navigator.pushNamedAndRemoveUntil('/', (route) => false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Obrigado! Redirecionando para a loja...'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
                 }
               },
             ),
-          ],
+            const Divider(height: 32),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withAlpha(26), // 0.1 * 255 ≈ 26
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.logout, color: Colors.red, size: 20),
+              ),
+              title: const Text('Sair', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.red),
+              onTap: () => _handleLogout(),
+            ),
+            const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
       body: Padding(
@@ -500,12 +728,14 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                           onAdicionarAoCarrinho: () {
                             Provider.of<CarrinhoProvider>(context, listen: false)
                                 .adicionarProduto(produto);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${produto.nome} adicionado ao carrinho!'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${produto.nome} adicionado ao carrinho!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
                           },
                           onToggleFavorito: () async {
                             if (!mounted) return;
@@ -557,5 +787,39 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Saída'),
+        content: const Text('Tem certeza que deseja sair da sua conta?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Sair'),
+          ),
+        ],
+      ),
+    );
+    
+    if (shouldLogout == true && mounted) {
+      final navigator = Navigator.of(context);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      navigator.pop();
+      await userProvider.fazerLogout();
+      if (mounted) {
+        navigator.pushNamedAndRemoveUntil('/', (route) => false);
+      }
+    }
   }
 }
