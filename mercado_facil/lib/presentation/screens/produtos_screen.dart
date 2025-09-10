@@ -19,10 +19,11 @@ class ProdutosScreen extends StatefulWidget {
 
 class _ProdutosScreenState extends State<ProdutosScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _categoriaScrollController = ScrollController();
   String _searchQuery = '';
   int _categoriaSelecionada = 0;
-  List<String> categorias = ['Todos', 'Frutas', 'Verduras', 'Carnes', 'Laticínios', 'Bebidas', 'Padaria'];
-  final List<String> _categorias = ['Todos', 'Frutas', 'Verduras', 'Carnes', 'Laticínios', 'Bebidas', 'Padaria'];
+  List<String> categorias = ['Todos'];
+  List<String> _categorias = ['Todos'];
   String _categoriaFiltro = 'Todos';
   bool _isLoading = true;
   List<Produto> _produtosExibidos = [];
@@ -70,6 +71,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
             setState(() {
               _todosProdutos = produtosComFavoritos;
               _produtosExibidos = produtosComFavoritos;
+              _atualizarCategorias(produtosComFavoritos);
               _isLoading = false;
             });
             debugPrint('🎯 Estado atualizado - produtos com favoritos: ${produtosComFavoritos.length}');
@@ -80,6 +82,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
             setState(() {
               _todosProdutos = produtos;
               _produtosExibidos = produtos;
+              _atualizarCategorias(produtos);
               _isLoading = false;
             });
           }
@@ -89,6 +92,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
           setState(() {
             _todosProdutos = produtos;
             _produtosExibidos = produtos;
+            _atualizarCategorias(produtos);
             _isLoading = false;
           });
           debugPrint('🎯 Estado atualizado - produtos: ${produtos.length}');
@@ -110,12 +114,44 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
     }
   }
 
+  void _atualizarCategorias(List<Produto> produtos) {
+    // Extrair categorias únicas dos produtos ativos
+    final categoriasUnicas = <String>{'Todos'};
+    
+    for (final produto in produtos) {
+      if (produto.categoria != null && produto.categoria!.isNotEmpty) {
+        categoriasUnicas.add(produto.categoria!);
+      }
+    }
+    
+    categorias = categoriasUnicas.toList();
+    _categorias = List.from(categorias);
+    
+    debugPrint('📂 Categorias atualizadas: $_categorias');
+  }
+
   void _selecionarCategoria(String? categoria) {
     setState(() {
       _categoriaFiltro = categoria ?? 'Todos';
       _categoriaSelecionada = _categorias.indexOf(_categoriaFiltro);
       _filtrarProdutos();
     });
+    
+    // Scroll horizontal automático para a categoria selecionada
+    _scrollToCategory(_categoriaSelecionada);
+  }
+  
+  void _scrollToCategory(int index) {
+    if (_categoriaScrollController.hasClients) {
+      const itemWidth = 120.0; // Largura aproximada de cada chip
+      final scrollPosition = (index * itemWidth) - (MediaQuery.of(context).size.width / 2) + (itemWidth / 2);
+      
+      _categoriaScrollController.animateTo(
+        scrollPosition.clamp(0.0, _categoriaScrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void _buscarProdutos(String query) {
@@ -149,6 +185,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _categoriaScrollController.dispose();
     super.dispose();
   }
 
@@ -727,6 +764,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
           SizedBox(
             height: 50,
             child: ListView.builder(
+              controller: _categoriaScrollController,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
               itemCount: _categorias.length,

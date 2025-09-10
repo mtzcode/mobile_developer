@@ -70,10 +70,8 @@ class ProdutoCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               if (produto.precoPromocional != null)
-                Flexible(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                Column(
+                  children: [
                     Text(
                       'R\$ ${produto.preco.toStringAsFixed(2)}',
                       style: const TextStyle(
@@ -82,25 +80,26 @@ class ProdutoCard extends StatelessWidget {
                         color: Colors.grey,
                         decoration: TextDecoration.lineThrough,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(height: 4),
                     Text(
                       'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
                       style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
                         color: Colors.red,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    ],
-                  ),
+                  ],
                 )
               else
                 Text(
                   'R\$ ${produto.preco.toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
                     color: colorScheme.primary,
                   ),
                   textAlign: TextAlign.center,
@@ -192,54 +191,42 @@ class ProdutoCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
-                // Preços
-                Row(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          if (produto.precoPromocional != null) ...[
-                            Flexible(
-                              child: Text(
-                                'R\$ ${produto.preco.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 13,
-                                  color: Colors.grey.shade600,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                  color: Colors.red,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ] else ...[
-                            Flexible(
-                              child: Text(
-                                'R\$ ${produto.preco.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                  color: colorScheme.primary,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                // Preços centralizados
+                SizedBox(
+                  width: double.infinity,
+                  child: produto.precoPromocional != null
+                    ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'R\$ ${produto.preco.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                           'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
+                           style: const TextStyle(
+                             fontWeight: FontWeight.w900,
+                             fontSize: 16,
+                             color: Colors.red,
+                           ),
+                        ),
+                      ],
+                    )
+                    : Text(
+                       'R\$ ${produto.preco.toStringAsFixed(2)}',
+                       style: TextStyle(
+                         fontWeight: FontWeight.w900,
+                         fontSize: 16,
+                         color: colorScheme.primary,
+                       ),
+                      textAlign: TextAlign.center,
                     ),
-                  ],
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
