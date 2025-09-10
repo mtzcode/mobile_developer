@@ -197,7 +197,7 @@ class ProdutoCard extends StatelessWidget {
                           : colorScheme.primary,
                     ),
                     const SizedBox(width: 4),
-                    if (produto.precoPromocional != null) ..[
+                    if (produto.precoPromocional != null) ...[
                       Text(
                         'R\$ \${produto.preco.toStringAsFixed(2)}',
                         style: TextStyle(
@@ -216,7 +216,7 @@ class ProdutoCard extends StatelessWidget {
                           color: Colors.green.shade600,
                         ),
                       ),
-                    ] else ..[
+                    ] else ...[
                       Text(
                         'R\$ \${produto.preco.toStringAsFixed(2)}',
                         style: TextStyle(
@@ -334,8 +334,6 @@ class ProdutoCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
