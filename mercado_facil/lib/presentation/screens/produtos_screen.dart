@@ -866,14 +866,16 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                                         produto.favorito = !produto.favorito;
                                       });
                                       
-                                      showAppSnackBar(
-                                        context,
-                                        produto.favorito 
-                                            ? '${produto.nome} adicionado aos favoritos!' 
-                                            : '${produto.nome} removido dos favoritos!',
-                                        icon: produto.favorito ? Icons.favorite : Icons.favorite_border,
-                                        backgroundColor: produto.favorito ? Colors.red.shade600 : Colors.orange.shade600,
-                                      );
+                                      if (mounted) {
+                                        showAppSnackBar(
+                                          context,
+                                          produto.favorito 
+                                              ? '${produto.nome} adicionado aos favoritos!' 
+                                              : '${produto.nome} removido dos favoritos!',
+                                          icon: produto.favorito ? Icons.favorite : Icons.favorite_border,
+                                          backgroundColor: produto.favorito ? Colors.red.shade600 : Colors.orange.shade600,
+                                        );
+                                      }
                                     }
                                   } catch (e) {
                                     if (mounted) {

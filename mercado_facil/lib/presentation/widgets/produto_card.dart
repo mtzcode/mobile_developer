@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../data/models/produto.dart';
 
-
 class ProdutoCard extends StatelessWidget {
   final Produto produto;
   final VoidCallback? onAdicionarAoCarrinho;
@@ -18,6 +17,7 @@ class ProdutoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    
     // Função para abrir modal de detalhes do produto
     void showProductModal() {
       showModalBottomSheet(
@@ -74,7 +74,7 @@ class ProdutoCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'R\$ ${produto.preco.toStringAsFixed(2)}',
+                      'R\$ \${produto.preco.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -84,7 +84,7 @@ class ProdutoCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
+                      'R\$ \${produto.precoPromocional!.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -95,7 +95,7 @@ class ProdutoCard extends StatelessWidget {
                 )
               else
                 Text(
-                  'R\$ ${produto.preco.toStringAsFixed(2)}',
+                  'R\$ \${produto.preco.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -117,22 +117,14 @@ class ProdutoCard extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: onAdicionarAoCarrinho,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade600,
+                    backgroundColor: colorScheme.primary,
                     foregroundColor: Colors.white,
                     textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_shopping_cart, size: 20, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('Adicionar ao carrinho'),
-                    ],
-                  ),
+                  child: const Text('Adicionar ao Carrinho'),
                 ),
               ),
             ],
@@ -140,7 +132,7 @@ class ProdutoCard extends StatelessWidget {
         ),
       );
     }
-    // Envolver o conteúdo do card em GestureDetector para abrir o modal
+
     return GestureDetector(
       onTap: showProductModal,
       child: Container(
@@ -149,130 +141,126 @@ class ProdutoCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 8),
-              spreadRadius: 0,
             ),
           ],
         ),
-        clipBehavior: Clip.hardEdge,
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Imagem
-                  Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: produto.imagemUrl.isNotEmpty
-                          ? Image.network(
-                              produto.imagemUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Center(
-                                child: Icon(Icons.image, color: colorScheme.primary, size: 32),
-                              ),
-                            )
-                          : Center(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: produto.imagemUrl.isNotEmpty
+                        ? Image.network(
+                            produto.imagemUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Center(
                               child: Icon(Icons.image, color: colorScheme.primary, size: 32),
                             ),
-                    ),
+                          )
+                        : Center(
+                            child: Icon(Icons.image, color: colorScheme.primary, size: 32),
+                          ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    produto.nome,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                      color: colorScheme.onSurface,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  produto.nome,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: colorScheme.onSurface,
                   ),
-                  const SizedBox(height: 6),
-                  // Preços com ícone
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.attach_money_rounded,
-                        size: 18,
-                        color: produto.precoPromocional != null
-                            ? Colors.green.shade600
-                            : colorScheme.primary,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                // Preços com ícone
+                Row(
+                  children: [
+                    Icon(
+                      Icons.attach_money_rounded,
+                      size: 18,
+                      color: produto.precoPromocional != null
+                          ? Colors.green.shade600
+                          : colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    if (produto.precoPromocional != null) ..[
+                      Text(
+                        'R\$ \${produto.preco.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                          decoration: TextDecoration.lineThrough,
+                        ),
                       ),
-                      const SizedBox(width: 4),
-                      if (produto.precoPromocional != null) ..[
-                        Text(
-                          'R\$ ${produto.preco.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            decoration: TextDecoration.lineThrough,
-                          ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'R\$ \${produto.precoPromocional!.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: Colors.green.shade600,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'R\$ ${produto.precoPromocional!.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: Colors.green.shade600,
-                          ),
+                      ),
+                    ] else ..[
+                      Text(
+                        'R\$ \${produto.preco.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: colorScheme.primary,
                         ),
-                      ] else
-                        Text(
-                          'R\$ ${produto.preco.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: colorScheme.primary,
-                          ),
-                        ),
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: onAdicionarAoCarrinho,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                        shadowColor: colorScheme.primary.withValues(alpha: 0.3),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: onAdicionarAoCarrinho,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_shopping_cart_rounded, size: 18, color: Colors.white),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Adicionar',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
+                      elevation: 2,
+                      shadowColor: colorScheme.primary.withValues(alpha: 0.3),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_shopping_cart_rounded, size: 18, color: Colors.white),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Adicionar',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
             // Tag de destaque alinhada à borda do card (fora da imagem)
             if (produto.destaque != null)
@@ -347,67 +335,57 @@ class ProdutoCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Skeleton da imagem
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
+          Expanded(
+            flex: 3,
             child: Container(
-              height: 110,
-              color: colorScheme.tertiary.withValues(alpha: 0.15),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Skeleton do nome
-                Container(
-                  height: 16,
-                  width: 80,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                // Skeleton do preço
-                Container(
-                  height: 16,
-                  width: 50,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                // Skeleton do botão
-                Container(
-                  height: 36,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 8),
+          Container(
+            height: 16,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            height: 14,
+            width: 80,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 40,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ],
