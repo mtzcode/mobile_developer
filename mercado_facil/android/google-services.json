@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "315102042752",
+    "project_id": "mercadofacilmobile",
+    "storage_bucket": "mercadofacilmobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315102042752:android:93e18eca929130ada62465",
+        "android_client_info": {
+          "package_name": "com.mtzcode.mercado_facil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDL-F2j-1eQ_4e_LgzXlzyccq-iCcOU0fY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

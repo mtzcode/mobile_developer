@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // REGRAS DE DESENVOLVIMENTO - MAIS PERMISSIVAS
+    // ⚠️ NÃO USE EM PRODUÇÃO ⚠️
+    
+    // Permitir todas as operações na coleção de usuários
+    match /usuarios/{userId} {
+      allow read, write: if true;
+    }
+    
+    // Permitir todas as operações na coleção de produtos
+    match /produtos/{produtoId} {
+      allow read, write: if true;
+    }
+    
+    // Permitir todas as operações na coleção de endereços
+    match /enderecos/{enderecoId} {
+      allow read, write: if true;
+    }
+    
+    // Permitir todas as operações na coleção de carrinhos
+    match /carrinhos/{carrinhoId} {
+      allow read, write: if true;
+    }
+    
+    // Permitir todas as operações em outras coleções
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+} 

@@ -1,0 +1,12 @@
+targets:
+  $default:
+    builders:
+      mockito|mockBuilder:
+        enabled: true
+        generate_for:
+          - test/unit/services/**.dart
+          - test/unit/models/**.dart
+        options:
+          # Configurações específicas para mocks
+          mockito_annotations: true
+          build_test_compilers: true

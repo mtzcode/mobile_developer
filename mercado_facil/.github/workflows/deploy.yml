@@ -1,0 +1,293 @@
+name: Automated Deployment - Mercado Fácil
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      platform:
+        description: "Platform to deploy"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - web
+          - android
+          - ios
+
+env:
+  FLUTTER_VERSION: "3.19.0"
+
+jobs:
+  # ===== DEPLOY STAGING =====
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Web (Staging)
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'web'
+        run: flutter build web --release --web-renderer canvaskit --dart-define=ENVIRONMENT=staging
+
+      - name: Deploy Web to Staging
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'web'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+          channelId: preview
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+
+      - name: Build Android (Staging)
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android'
+        run: |
+          flutter build appbundle --release --dart-define=ENVIRONMENT=staging
+
+      - name: Upload Android to Staging
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CONFIG_JSON }}
+          packageName: com.mercadofacil.app
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+
+      - name: Notify Staging Deploy
+        run: |
+          echo "🚀 Staging deployment completed!"
+          echo "Web: https://${{ secrets.FIREBASE_PROJECT_ID }}--preview.web.app"
+          echo "Android: Available in Play Console (Internal)"
+
+  # ===== DEPLOY PRODUCTION =====
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Web (Production)
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'web'
+        run: flutter build web --release --web-renderer canvaskit --dart-define=ENVIRONMENT=production
+
+      - name: Deploy Web to Production
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'web'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+          channelId: live
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+
+      - name: Build Android (Production)
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android'
+        run: |
+          flutter build appbundle --release --dart-define=ENVIRONMENT=production
+
+      - name: Upload Android to Production
+        if: github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CONFIG_JSON }}
+          packageName: com.mercadofacil.app
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+
+      - name: Create Release
+        if: github.event.inputs.platform == 'all'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          body: |
+            ## 🚀 Production Release v${{ github.run_number }}
+
+            ### Changes
+            - Automated deployment from main branch
+            - Build number: ${{ github.run_number }}
+            - Commit: ${{ github.sha }}
+
+            ### Platforms
+            - Web: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app
+            - Android: Available in Play Console (Internal)
+
+            ### Artifacts
+            Download the latest builds from the Actions tab.
+          draft: false
+          prerelease: false
+
+      - name: Notify Production Deploy
+        run: |
+          echo "🎉 Production deployment completed!"
+          echo "Web: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app"
+          echo "Android: Available in Play Console (Internal)"
+          echo "Release: https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
+
+  # ===== DEPLOY WEB ONLY =====
+  deploy-web-only:
+    name: Deploy Web Only
+    runs-on: ubuntu-latest
+    if: github.event.inputs.platform == 'web'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Web
+        run: flutter build web --release --web-renderer canvaskit
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+          channelId: live
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+
+      - name: Notify Web Deploy
+        run: |
+          echo "🌐 Web deployment completed!"
+          echo "URL: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app"
+
+  # ===== DEPLOY ANDROID ONLY =====
+  deploy-android-only:
+    name: Deploy Android Only
+    runs-on: ubuntu-latest
+    if: github.event.inputs.platform == 'android'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore.jks
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Build App Bundle
+        run: flutter build appbundle --release
+
+      - name: Upload to Play Store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CONFIG_JSON }}
+          packageName: com.mercadofacil.app
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+
+      - name: Notify Android Deploy
+        run: |
+          echo "📱 Android deployment completed!"
+          echo "Available in Play Console (Internal)"
+
+  # ===== DEPLOY SUMMARY =====
+  deploy-summary:
+    name: Deploy Summary
+    runs-on: ubuntu-latest
+    needs:
+      [deploy-staging, deploy-production, deploy-web-only, deploy-android-only]
+    if: always()
+    steps:
+      - name: Generate deployment summary
+        run: |
+          echo "# Deployment Summary - ${{ github.run_number }}" > deploy-summary.md
+          echo "## Deployment Results" >> deploy-summary.md
+          echo "- Staging: ${{ needs.deploy-staging.result }}" >> deploy-summary.md
+          echo "- Production: ${{ needs.deploy-production.result }}" >> deploy-summary.md
+          echo "- Web Only: ${{ needs.deploy-web-only.result }}" >> deploy-summary.md
+          echo "- Android Only: ${{ needs.deploy-android-only.result }}" >> deploy-summary.md
+          echo "" >> deploy-summary.md
+          echo "## Environment URLs" >> deploy-summary.md
+          echo "- Staging Web: https://${{ secrets.FIREBASE_PROJECT_ID }}--preview.web.app" >> deploy-summary.md
+          echo "- Production Web: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app" >> deploy-summary.md
+          echo "- Android: Play Console (Internal)" >> deploy-summary.md
+          echo "" >> deploy-summary.md
+          echo "## Next Steps" >> deploy-summary.md
+          if [ "${{ needs.deploy-production.result }}" == "success" ]; then
+            echo "✅ Production deployment successful!" >> deploy-summary.md
+            echo "- Monitor application performance" >> deploy-summary.md
+            echo "- Check for any issues in production" >> deploy-summary.md
+          else
+            echo "❌ Production deployment failed!" >> deploy-summary.md
+            echo "- Review deployment logs" >> deploy-summary.md
+            echo "- Fix issues and redeploy" >> deploy-summary.md
+          fi
+
+      - name: Upload deployment summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: deploy-summary-${{ github.run_number }}
+          path: deploy-summary.md
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('deploy-summary.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
