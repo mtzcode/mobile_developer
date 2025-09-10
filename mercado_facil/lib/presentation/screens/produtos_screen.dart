@@ -651,140 +651,306 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Barra de pesquisa simples
-            Container(
-              height: 53,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade400),
-                color: Colors.white,
-              ),
-              child: Row(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Icon(Icons.search, color: Color(0xFF003938)),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (value) {
-                        _buscarProdutos(value);
-                      },
-                      decoration: const InputDecoration(
-                        hintText: 'Pesquisar produtos...',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
+      body: Column(
+        children: [
+          // Header com estatísticas e ações rápidas
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colorScheme.primary.withValues(alpha: 0.1),
+                  colorScheme.primary.withValues(alpha: 0.05),
                 ],
               ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.2),
+                width: 1,
+              ),
             ),
-            const SizedBox(height: 16),
-            // Lista de categorias simples
-            SizedBox(
-              height: 40,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _categorias.length,
-                itemBuilder: (context, index) {
-                  final categoria = _categorias[index];
-                  final isSelected = _categoriaFiltro == categoria;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Produtos Disponíveis',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_produtosExibidos.length} ${_produtosExibidos.length == 1 ? 'produto' : 'produtos'}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.inventory_2_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Barra de pesquisa moderna
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                _buscarProdutos(value);
+              },
+              decoration: InputDecoration(
+                hintText: 'Buscar produtos...',
+                hintStyle: TextStyle(color: Colors.grey[500]),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: colorScheme.primary,
+                  size: 24,
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          color: Colors.grey[500],
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          _buscarProdutos('');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Lista de categorias moderna
+          SizedBox(
+            height: 50,
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: _categorias.length,
+              itemBuilder: (context, index) {
+                final categoria = _categorias[index];
+                final isSelected = _categoriaFiltro == categoria;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     child: FilterChip(
-                      label: Text(categoria),
+                      label: Text(
+                        categoria,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected ? Colors.white : colorScheme.primary,
+                        ),
+                      ),
                       selected: isSelected,
                       onSelected: (selected) {
                         _selecionarCategoria(selected ? categoria : null);
                       },
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Lista de produtos
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.75,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
+                      backgroundColor: Colors.white,
+                      selectedColor: colorScheme.primary,
+                      checkmarkColor: Colors.white,
+                      side: BorderSide(
+                        color: isSelected ? colorScheme.primary : Colors.grey.withValues(alpha: 0.3),
+                        width: 1.5,
                       ),
-                      itemCount: _produtosExibidos.length,
-                      itemBuilder: (context, index) {
-                        final produto = _produtosExibidos[index];
-                        return ProdutoCard(
-                          produto: produto,
-                          onAdicionarAoCarrinho: () {
-                            Provider.of<CarrinhoProvider>(context, listen: false)
-                                .adicionarProduto(produto);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('${produto.nome} adicionado ao carrinho!'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                          },
-                          onToggleFavorito: () async {
-                            if (!mounted) return;
-                            final scaffoldMessenger = ScaffoldMessenger.of(context);
-                            final userProvider = Provider.of<UserProvider>(context, listen: false);
-                            final userId = userProvider.usuarioLogado?.id;
-                            
-                            if (userId != null) {
-                              try {
-                                final firestoreService = FirestoreService();
-                                
-                                if (produto.favorito) {
-                                  await firestoreService.removerFavorito(userId, produto.id);
-                                } else {
-                                  await firestoreService.adicionarFavorito(userId, produto.id);
-                                }
-                                
-                                if (mounted) {
-                                  setState(() {
-                                    produto.favorito = !produto.favorito;
-                                  });
-                                  
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(produto.favorito 
-                                          ? '${produto.nome} adicionado aos favoritos!' 
-                                          : '${produto.nome} removido dos favoritos!'),
-                                      backgroundColor: produto.favorito ? Colors.green : Colors.orange,
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text('Erro ao atualizar favoritos: $e'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            }
-                          },
-                        );
-                      },
+                      elevation: isSelected ? 4 : 0,
+                      shadowColor: colorScheme.primary.withValues(alpha: 0.3),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Grade de produtos moderna
+          Expanded(
+            child: _isLoading
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Carregando produtos...',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : _produtosExibidos.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off_rounded,
+                              size: 80,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Nenhum produto encontrado',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _searchQuery.isNotEmpty
+                                  ? 'Tente buscar por outro termo'
+                                  : 'Verifique os filtros aplicados',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: GridView.builder(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.8,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                          itemCount: _produtosExibidos.length,
+                          itemBuilder: (context, index) {
+                            final produto = _produtosExibidos[index];
+                            return ProdutoCard(
+                              produto: produto,
+                              onAdicionarAoCarrinho: () {
+                                Provider.of<CarrinhoProvider>(context, listen: false)
+                                    .adicionarProduto(produto);
+                                showAppSnackBar(
+                                  context,
+                                  '${produto.nome} adicionado ao carrinho!',
+                                  icon: Icons.check_circle,
+                                  backgroundColor: Colors.green.shade600,
+                                );
+                              },
+                              onToggleFavorito: () async {
+                                if (!mounted) return;
+                                final userProvider = Provider.of<UserProvider>(context, listen: false);
+                                final userId = userProvider.usuarioLogado?.id;
+                                
+                                if (userId != null) {
+                                  try {
+                                    final firestoreService = FirestoreService();
+                                    
+                                    if (produto.favorito) {
+                                      await firestoreService.removerFavorito(userId, produto.id);
+                                    } else {
+                                      await firestoreService.adicionarFavorito(userId, produto.id);
+                                    }
+                                    
+                                    if (mounted) {
+                                      setState(() {
+                                        produto.favorito = !produto.favorito;
+                                      });
+                                      
+                                      showAppSnackBar(
+                                        context,
+                                        produto.favorito 
+                                            ? '${produto.nome} adicionado aos favoritos!' 
+                                            : '${produto.nome} removido dos favoritos!',
+                                        icon: produto.favorito ? Icons.favorite : Icons.favorite_border,
+                                        backgroundColor: produto.favorito ? Colors.red.shade600 : Colors.orange.shade600,
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      showAppSnackBar(
+                                        context,
+                                        'Erro ao atualizar favoritos',
+                                        icon: Icons.error,
+                                        backgroundColor: Colors.red.shade600,
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+          ),
+        ],
       ),
     );
   }
