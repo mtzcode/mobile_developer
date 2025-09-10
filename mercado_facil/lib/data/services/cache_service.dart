@@ -23,6 +23,9 @@ class CacheService {
         'destaque': produto.destaque,
         'precoPromocional': produto.precoPromocional,
         'favorito': produto.favorito,
+        'estoque': produto.estoque,
+        'disponivel': produto.disponivel,
+        'avaliacoes': produto.avaliacoes,
       }).toList();
 
       await prefs.setString(_produtosKey, jsonEncode(produtosJson));
@@ -51,6 +54,11 @@ class CacheService {
         destaque: json['destaque'],
         precoPromocional: json['precoPromocional']?.toDouble(),
         favorito: json['favorito'] ?? false,
+        estoque: json['estoque'] ?? 0,
+        disponivel: json['disponivel'] ?? true,
+        avaliacoes: json['avaliacoes'] != null 
+            ? List<double>.from(json['avaliacoes'].map((x) => (x as num).toDouble()))
+            : [],
       )).toList();
     } catch (e) {
       return [];
@@ -114,4 +122,4 @@ class CacheService {
       'quantidadeProdutos': produtos.length,
     };
   }
-} 
+}

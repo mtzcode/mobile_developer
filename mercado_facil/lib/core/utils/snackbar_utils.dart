@@ -42,4 +42,47 @@ void showAppSnackBar(
       elevation: 6,
     ),
   );
-} 
+}
+
+/// Classe utilitária para SnackBars com métodos estáticos
+class SnackBarUtils {
+  /// Mostra SnackBar de sucesso
+  static void showSuccess(BuildContext context, String message) {
+    showAppSnackBar(
+      context,
+      message,
+      backgroundColor: Colors.green,
+      icon: Icons.check_circle,
+    );
+  }
+
+  /// Mostra SnackBar de erro
+  static void showError(BuildContext context, String message) {
+    showAppSnackBar(
+      context,
+      message,
+      backgroundColor: Colors.red,
+      icon: Icons.error,
+    );
+  }
+
+  /// Mostra SnackBar de informação
+  static void showInfo(BuildContext context, String message) {
+    showAppSnackBar(
+      context,
+      message,
+      backgroundColor: Colors.blue,
+      icon: Icons.info,
+    );
+  }
+
+  /// Mostra SnackBar de aviso
+  static void showWarning(BuildContext context, String message) {
+    showAppSnackBar(
+      context,
+      message,
+      backgroundColor: Colors.orange,
+      icon: Icons.warning,
+    );
+  }
+}

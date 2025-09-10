@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/produto.dart';
+import 'produtos_service.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -17,19 +18,25 @@ class FirestoreService {
     try {
       final snapshot = await _produtos.get();
       return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return null;
         return Produto(
           id: doc.id,
           nome: data['nome'] ?? '',
           preco: (data['preco'] ?? 0).toDouble(),
           imagemUrl: data['imagemUrl'] ?? '',
-          descricao: data['descricao'],
-          categoria: data['categoria'],
-          destaque: data['destaque'],
+          descricao: data['descricao'] ?? '',
+          categoria: data['categoria'] ?? '',
+          destaque: data['destaque'] ?? false,
           precoPromocional: data['precoPromocional']?.toDouble(),
           favorito: false, // Será definido separadamente
+          estoque: data['estoque'] ?? 0,
+          disponivel: data['disponivel'] ?? true,
+          avaliacoes: data['avaliacoes'] != null 
+              ? List<double>.from(data['avaliacoes'].map((x) => (x as num).toDouble()))
+              : [],
         );
-      }).toList();
+      }).whereType<Produto>().toList();
     } catch (e) {
       throw Exception('Erro ao carregar produtos');
     }
@@ -43,19 +50,25 @@ class FirestoreService {
           .get();
       
       return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return null;
         return Produto(
           id: doc.id,
           nome: data['nome'] ?? '',
           preco: (data['preco'] ?? 0).toDouble(),
           imagemUrl: data['imagemUrl'] ?? '',
-          descricao: data['descricao'],
-          categoria: data['categoria'],
-          destaque: data['destaque'],
+          descricao: data['descricao'] ?? '',
+          categoria: data['categoria'] ?? '',
+          destaque: data['destaque'] ?? false,
           precoPromocional: data['precoPromocional']?.toDouble(),
           favorito: false,
+          estoque: data['estoque'] ?? 0,
+          disponivel: data['disponivel'] ?? true,
+          avaliacoes: data['avaliacoes'] != null 
+              ? List<double>.from(data['avaliacoes'].map((x) => (x as num).toDouble()))
+              : [],
         );
-      }).toList();
+      }).whereType<Produto>().toList();
     } catch (e) {
       throw Exception('Erro ao carregar produtos');
     }
@@ -69,19 +82,25 @@ class FirestoreService {
           .get();
       
       return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return null;
         return Produto(
           id: doc.id,
           nome: data['nome'] ?? '',
           preco: (data['preco'] ?? 0).toDouble(),
           imagemUrl: data['imagemUrl'] ?? '',
-          descricao: data['descricao'],
-          categoria: data['categoria'],
-          destaque: data['destaque'],
+          descricao: data['descricao'] ?? '',
+          categoria: data['categoria'] ?? '',
+          destaque: data['destaque'] ?? false,
           precoPromocional: data['precoPromocional']?.toDouble(),
           favorito: false,
+          estoque: data['estoque'] ?? 0,
+          disponivel: data['disponivel'] ?? true,
+          avaliacoes: data['avaliacoes'] != null 
+              ? List<double>.from(data['avaliacoes'].map((x) => (x as num).toDouble()))
+              : [],
         );
-      }).toList();
+      }).whereType<Produto>().toList();
     } catch (e) {
       throw Exception('Erro ao carregar produtos em destaque');
     }
@@ -114,19 +133,25 @@ class FirestoreService {
       // Carrega todos os produtos e faz paginação em memória
       final snapshot = await _produtos.orderBy('nome').get();
       final allProducts = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return null;
         return Produto(
           id: doc.id,
           nome: data['nome'] ?? '',
           preco: (data['preco'] ?? 0).toDouble(),
           imagemUrl: data['imagemUrl'] ?? '',
-          descricao: data['descricao'],
-          categoria: data['categoria'],
-          destaque: data['destaque'],
+          descricao: data['descricao'] ?? '',
+          categoria: data['categoria'] ?? '',
+          destaque: data['destaque'] ?? false,
           precoPromocional: data['precoPromocional']?.toDouble(),
           favorito: false,
+          estoque: data['estoque'] ?? 0,
+          disponivel: data['disponivel'] ?? true,
+          avaliacoes: data['avaliacoes'] != null 
+              ? List<double>.from(data['avaliacoes'].map((x) => (x as num).toDouble()))
+              : [],
         );
-      }).toList();
+      }).whereType<Produto>().toList();
       
       // Aplica paginação em memória
       final start = (page - 1) * pageSize;
@@ -201,9 +226,9 @@ class FirestoreService {
           .get();
       
       return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return data['produtoId'] as String;
-      }).toList();
+        final data = doc.data() as Map<String, dynamic>?;
+        return data?['produtoId'] as String? ?? '';
+      }).where((id) => id.isNotEmpty).toList();
     } catch (e) {
       return [];
     }
@@ -235,10 +260,10 @@ class FirestoreService {
           .get();
       
       return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return {
+        final data = doc.data() as Map<String, dynamic>?;
+        return <String, dynamic>{
           'id': doc.id,
-          ...data,
+          ...?data,
         };
       }).toList();
     } catch (e) {
@@ -264,13 +289,30 @@ class FirestoreService {
   Future<List<Produto>> getProdutosComFavoritos(String userId) async {
     try {
       final produtos = await getProdutos();
+      
+      // Se não há produtos no Firestore, usa fallback do ProdutosService
+      if (produtos.isEmpty) {
+        final produtosMock = ProdutosService.getProdutosMock();
+        final favoritos = await getFavoritos(userId);
+        
+        return produtosMock.map((produto) {
+          return produto.copyWith(favorito: favoritos.contains(produto.id));
+        }).toList();
+      }
+      
       final favoritos = await getFavoritos(userId);
       
       return produtos.map((produto) {
         return produto.copyWith(favorito: favoritos.contains(produto.id));
       }).toList();
     } catch (e) {
-      return [];
+      // Fallback para dados mock em caso de erro
+      try {
+        final produtosMock = ProdutosService.getProdutosMock();
+        return produtosMock;
+      } catch (fallbackError) {
+        return [];
+      }
     }
   }
 
@@ -292,4 +334,164 @@ class FirestoreService {
       return [];
     }
   }
-} 
+
+  // ===== MÉTODOS PARA NOTIFICATION SCHEDULER =====
+
+  // Buscar todos os produtos (alias para getProdutos)
+  Future<List<Produto>> getAllProducts() async {
+    return await getProdutos();
+  }
+
+  // Buscar todos os usuários
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    try {
+      final snapshot = await _usuarios.get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>?;
+        return <String, dynamic>{
+          'id': doc.id,
+          ...?data,
+        };
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Buscar favoritos do usuário (retorna lista de produtos)
+  Future<List<String>> getUserFavorites(String userId) async {
+    return await getFavoritos(userId);
+  }
+
+  // Atualizar documento genérico
+  Future<void> updateDocument(String collection, String docId, Map<String, dynamic> data) async {
+    try {
+      await _firestore.collection(collection).doc(docId).update(data);
+    } catch (e) {
+      throw Exception('Erro ao atualizar documento');
+    }
+  }
+
+  // Adicionar documento genérico
+  Future<String> addDocument(String collection, Map<String, dynamic> data) async {
+    try {
+      final docRef = await _firestore.collection(collection).add(data);
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Erro ao adicionar documento');
+    }
+  }
+
+  // Buscar coleção genérica
+  Future<List<Map<String, dynamic>>> getCollection(String collection) async {
+    try {
+      final snapshot = await _firestore.collection(collection).get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>?;
+        return <String, dynamic>{
+          'id': doc.id,
+          ...?data,
+        };
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // ===== MÉTODOS AUXILIARES =====
+
+  /// Busca usuário por ID
+  Future<Map<String, dynamic>?> getUserById(String userId) async {
+    try {
+      final doc = await _usuarios.doc(userId).get();
+      if (doc.exists) {
+        return {
+          'id': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+        };
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Busca produto por ID
+  Future<Map<String, dynamic>?> getProdutoById(String produtoId) async {
+    try {
+      final doc = await _produtos.doc(produtoId).get();
+      if (doc.exists) {
+        return {
+          'id': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+        };
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Adiciona histórico de notificação
+  Future<void> addNotificationHistory(Map<String, dynamic> notification) async {
+    try {
+      await _firestore.collection('notification_history').add({
+        ...notification,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      // Erro silencioso
+    }
+  }
+
+  /// Busca histórico de notificações
+  Future<List<Map<String, dynamic>>> getNotificationHistory({String? userId, int limit = 50}) async {
+    try {
+      Query query = _firestore.collection('notification_history');
+      
+      if (userId != null) {
+        query = query.where('userId', isEqualTo: userId);
+      }
+      
+      final snapshot = await query
+          .orderBy('timestamp', descending: true)
+          .limit(limit)
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+        };
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Busca documento genérico
+  Future<Map<String, dynamic>?> getDocument(String collection, String docId) async {
+    try {
+      final doc = await _firestore.collection(collection).doc(docId).get();
+      if (doc.exists) {
+        return {
+          'id': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+        };
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Deleta documento genérico
+  Future<void> deleteDocument(String collection, String docId) async {
+    try {
+      await _firestore.collection(collection).doc(docId).delete();
+    } catch (e) {
+      // Erro silencioso
+    }
+  }
+
+  }

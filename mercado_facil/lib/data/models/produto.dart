@@ -31,6 +31,15 @@ class Produto {
   /// Indica se o produto está nos favoritos do usuário
   bool favorito;
 
+  /// Quantidade em estoque do produto
+  final int estoque;
+
+  /// Indica se o produto está disponível para compra
+  final bool disponivel;
+
+  /// Lista de avaliações do produto
+  final List<double> avaliacoes;
+
   /// Construtor do Produto
   /// 
   /// [id] - Identificador único obrigatório
@@ -42,6 +51,9 @@ class Produto {
   /// [destaque] - Destaque opcional
   /// [precoPromocional] - Preço promocional opcional
   /// [favorito] - Status de favorito (padrão: false)
+  /// [estoque] - Quantidade em estoque (padrão: 0)
+  /// [disponivel] - Disponibilidade do produto (padrão: true)
+  /// [avaliacoes] - Lista de avaliações (padrão: lista vazia)
   Produto({
     required this.id,
     required this.nome,
@@ -52,6 +64,9 @@ class Produto {
     this.destaque,
     this.precoPromocional,
     bool? favorito,
+    this.estoque = 0,
+    this.disponivel = true,
+    this.avaliacoes = const [],
   }) : favorito = favorito ?? false;
 
   /// Cria uma cópia do produto com campos modificados.
@@ -68,6 +83,9 @@ class Produto {
   /// [destaque] - Novo destaque (opcional)
   /// [precoPromocional] - Novo preço promocional (opcional)
   /// [favorito] - Novo status de favorito (opcional)
+  /// [estoque] - Nova quantidade em estoque (opcional)
+  /// [disponivel] - Nova disponibilidade (opcional)
+  /// [avaliacoes] - Nova lista de avaliações (opcional)
   /// 
   /// Retorna uma nova instância de [Produto] com os campos modificados.
   Produto copyWith({
@@ -80,6 +98,9 @@ class Produto {
     String? destaque,
     double? precoPromocional,
     bool? favorito,
+    int? estoque,
+    bool? disponivel,
+    List<double>? avaliacoes,
   }) {
     return Produto(
       id: id ?? this.id,
@@ -91,6 +112,9 @@ class Produto {
       destaque: destaque ?? this.destaque,
       precoPromocional: precoPromocional ?? this.precoPromocional,
       favorito: favorito ?? this.favorito,
+        estoque: estoque ?? this.estoque,
+        disponivel: disponivel ?? this.disponivel,
+        avaliacoes: avaliacoes ?? this.avaliacoes,
     );
   }
 
@@ -111,6 +135,9 @@ class Produto {
       'destaque': destaque,
       'precoPromocional': precoPromocional,
       'favorito': favorito,
+      'estoque': estoque,
+      'disponivel': disponivel,
+      'avaliacoes': avaliacoes,
     };
   }
 
@@ -136,6 +163,11 @@ class Produto {
           ? (map['precoPromocional'] as num).toDouble() 
           : null,
       favorito: map['favorito'] ?? false,
+      estoque: map['estoque'] ?? 0,
+      disponivel: map['disponivel'] ?? true,
+      avaliacoes: map['avaliacoes'] != null 
+          ? List<double>.from(map['avaliacoes'].map((x) => (x as num).toDouble()))
+          : [],
     );
   }
 
@@ -277,4 +309,4 @@ final List<Produto> produtosMock = [
     destaque: 'mais vendido',
     favorito: true,
   ),
-]; 
+];

@@ -11,6 +11,9 @@ import '../models/pedido.dart';
 import 'user_provider_riverpod.dart';
 import 'carrinho_provider_riverpod.dart';
 import 'pedidos_provider_riverpod.dart';
+import 'notification_provider.dart';
+import '../services/notification_service.dart';
+import '../services/firestore_service.dart';
 
 /// Configuração dos providers Riverpod
 /// 
@@ -32,6 +35,16 @@ final firestoreAuthServiceProvider = Provider<FirestoreAuthService>((ref) {
 /// Provider do serviço de pedidos
 final pedidosServiceProvider = Provider<PedidosService>((ref) {
   return PedidosService();
+});
+
+/// Provider do serviço de notificações
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService();
+});
+
+/// Provider do serviço Firestore
+final firestoreServiceProvider = Provider<FirestoreService>((ref) {
+  return FirestoreService();
 });
 
 // ===== REPOSITÓRIOS =====
@@ -72,6 +85,12 @@ final carrinhoProvider = StateNotifierProvider.family<CarrinhoNotifier, Carrinho
 final pedidosProvider = StateNotifierProvider.family<PedidosNotifier, PedidosState, String>((ref, userId) {
   final repository = ref.watch(pedidosRepositoryProvider);
   return PedidosNotifier(repository, userId);
+});
+
+/// Provider do notifier de notificações
+final notificationProvider = StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
+  final service = ref.watch(notificationServiceProvider);
+  return NotificationNotifier(service);
 });
 
 // ===== PROVIDERS DERIVADOS =====
