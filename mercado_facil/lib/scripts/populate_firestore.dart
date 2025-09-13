@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../firebase_options.dart';
@@ -17,21 +16,21 @@ void main() async {
 /// Script para popular o Firestore com produtos de teste
 Future<void> popularFirestore() async {
   try {
-    debugPrint('🔄 Iniciando população do Firestore...');
+    // Iniciando população do Firestore
     
     final firestore = FirebaseFirestore.instance;
     final produtosCollection = firestore.collection('produtos');
     
     // Verificar se já existem produtos
     final snapshot = await produtosCollection.get();
-    debugPrint('📊 Produtos existentes: ${snapshot.docs.length}');
+    // Verificando produtos existentes
     
     if (snapshot.docs.isNotEmpty) {
-      debugPrint('⚠️ Produtos já existem. Limpando coleção...');
+      // Produtos já existem, limpando coleção
       for (var doc in snapshot.docs) {
         await doc.reference.delete();
       }
-      debugPrint('🗑️ Coleção limpa.');
+      // Coleção limpa
     }
     
     // Produtos de teste
@@ -131,27 +130,21 @@ Future<void> popularFirestore() async {
     ];
     
     // Adicionar produtos
-    debugPrint('📦 Adicionando ${produtosTeste.length} produtos...');
+    // Adicionando produtos de teste
     
     for (int i = 0; i < produtosTeste.length; i++) {
       final produto = produtosTeste[i];
       await produtosCollection.add(produto);
-      debugPrint('✅ Produto ${i + 1}/${produtosTeste.length}: ${produto['nome']}');
+      // Produto adicionado
     }
     
     // Verificar produtos adicionados
-    final finalSnapshot = await produtosCollection.get();
-    debugPrint('🎯 População concluída! Total de produtos: ${finalSnapshot.docs.length}');
+    // População concluída
     
     // Listar produtos adicionados
-    debugPrint('\n📋 Produtos no Firestore:');
-    for (var doc in finalSnapshot.docs) {
-      final data = doc.data();
-      debugPrint('  - ${data['nome']}: R\$ ${data['preco']}');
-    }
+    // Produtos adicionados ao Firestore com sucesso
     
-  } catch (e, stackTrace) {
-    debugPrint('❌ Erro ao popular Firestore: $e');
-    debugPrint('Stack trace: $stackTrace');
+  } catch (e) {
+    // Erro ao popular Firestore
   }
 }

@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/logger.dart';
 import '../models/notification_model.dart' as models;
+import 'user_notification_settings_service.dart';
 
 /// Serviço responsável por gerenciar notificações push via Firebase Cloud Messaging
 class NotificationService {
@@ -12,6 +13,8 @@ class NotificationService {
   NotificationService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  final UserNotificationSettingsService _userSettingsService = 
+      UserNotificationSettingsService();
   String? _fcmToken;
   
   /// Callback para quando uma notificação é recebida em foreground
@@ -276,32 +279,35 @@ class NotificationService {
 
 
   /// Obtém configurações de notificação para um usuário específico
-  /// Retorna configurações padrão se não encontrar configurações específicas
+  /// Carrega do Firestore/cache local ou retorna configurações padrão
   Future<models.NotificationSettings> getNotificationSettings(String userId) async {
     try {
-      // Por enquanto, retorna configurações padrão
-      // Em uma implementação real, buscaria do Firestore ou cache local
-      return const models.NotificationSettings(
-        pushEnabled: true,
-        emailEnabled: true,
-
-        orderUpdates: true,
-        promotions: true,
-        systemNotifications: true,
-        deliveryUpdates: true,
-        favoritePromotions: true,
-        cartReminders: true,
-        newProducts: false,
-        priceAlerts: false,
-        vibrationEnabled: true,
-      );
+      return await _userSettingsService.getUserNotificationSettings(userId);
     } catch (e, stackTrace) {
       AppLogger.error('Erro ao obter configurações de notificação para usuário $userId', e, stackTrace);
       return const models.NotificationSettings();
     }
   }
 
-  /// Salva configurações de notificação
+  /// Salva configurações de notificação para um usuário específico
+  Future<void> saveUserNotificationSettings(
+    String userId, 
+    models.NotificationSettings settings
+  ) async {
+    try {
+      await _userSettingsService.saveUserNotificationSettings(userId, settings);
+      
+      // Gerenciar subscrições de tópicos baseado nas configurações
+      await _manageTopicSubscriptionsFromSettings(settings);
+      
+      AppLogger.info('Configurações de notificação salvas para usuário $userId');
+    } catch (e, stackTrace) {
+      AppLogger.error('Erro ao salvar configurações de notificação', e, stackTrace);
+    }
+  }
+
+  /// Salva configurações de notificação (método legado)
+  @Deprecated('Use saveUserNotificationSettings instead')
   Future<void> saveNotificationSettings(Map<String, Map<String, bool>> settings) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -310,13 +316,48 @@ class NotificationService {
       // Gerenciar subscrições de tópicos baseado nas configurações
       await _manageTopicSubscriptions(settings);
       
-      AppLogger.info('Configurações de notificação salvas');
+      AppLogger.info('Configurações de notificação salvas (método legado)');
     } catch (e, stackTrace) {
       AppLogger.error('Erro ao salvar configurações de notificação', e, stackTrace);
     }
   }
 
-  /// Gerencia subscrições de tópicos baseado nas configurações
+  /// Gerencia subscrições de tópicos baseado no modelo NotificationSettings
+  Future<void> _manageTopicSubscriptionsFromSettings(models.NotificationSettings settings) async {
+    try {
+      // Subscrever/desinscrever de tópicos baseado nas configurações
+      if (settings.promotions) {
+        await subscribeToTopic('promotions');
+      } else {
+        await unsubscribeFromTopic('promotions');
+      }
+      
+      if (settings.favoritePromotions) {
+        await subscribeToTopic('favorite_promotions');
+      } else {
+        await unsubscribeFromTopic('favorite_promotions');
+      }
+      
+      if (settings.newProducts) {
+        await subscribeToTopic('new_products');
+      } else {
+        await unsubscribeFromTopic('new_products');
+      }
+      
+      if (settings.systemNotifications) {
+        await subscribeToTopic('system_notifications');
+      } else {
+        await unsubscribeFromTopic('system_notifications');
+      }
+      
+      AppLogger.info('Subscrições de tópicos atualizadas baseado nas configurações');
+    } catch (e, stackTrace) {
+      AppLogger.error('Erro ao gerenciar subscrições de tópicos', e, stackTrace);
+    }
+  }
+
+  /// Gerencia subscrições de tópicos baseado nas configurações (método legado)
+  @Deprecated('Use _manageTopicSubscriptionsFromSettings instead')
   Future<void> _manageTopicSubscriptions(Map<String, Map<String, bool>> settings) async {
     try {
       for (final entry in settings.entries) {
@@ -330,7 +371,45 @@ class NotificationService {
         }
       }
     } catch (e, stackTrace) {
-      AppLogger.error('Erro ao gerenciar subscrições de tópicos', e, stackTrace);
+      AppLogger.error('Erro ao gerenciar subscrições de tópicos (método legado)', e, stackTrace);
+    }
+  }
+
+  /// Sincroniza configurações de notificação com o Firestore
+  Future<void> syncNotificationSettings(String userId) async {
+    try {
+      await _userSettingsService.syncWithFirestore(userId);
+      AppLogger.info('Configurações de notificação sincronizadas para usuário $userId');
+    } catch (e, stackTrace) {
+      AppLogger.error('Erro ao sincronizar configurações de notificação', e, stackTrace);
+    }
+  }
+
+  /// Remove configurações de notificação de um usuário
+  Future<void> clearUserNotificationSettings(String userId) async {
+    try {
+      await _userSettingsService.clearUserSettings(userId);
+      AppLogger.info('Configurações de notificação removidas para usuário $userId');
+    } catch (e, stackTrace) {
+      AppLogger.error('Erro ao remover configurações de notificação', e, stackTrace);
+    }
+  }
+
+  /// Verifica se há configurações pendentes de sincronização
+  Future<bool> hasPendingSync(String userId) async {
+    try {
+      return await _userSettingsService.hasPendingSync(userId);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Obtém estatísticas de configurações para debug
+  Future<Map<String, dynamic>> getSettingsStats(String userId) async {
+    try {
+      return await _userSettingsService.getSettingsStats(userId);
+    } catch (e) {
+      return {'error': true};
     }
   }
 

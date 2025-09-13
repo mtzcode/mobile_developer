@@ -9,7 +9,8 @@ import '../../core/utils/snackbar_utils.dart';
 
 class FavoritosScreen extends StatefulWidget {
   final List<Produto> produtos;
-  const FavoritosScreen({super.key, required this.produtos});
+  final VoidCallback? onFavoritosChanged;
+  const FavoritosScreen({super.key, required this.produtos, this.onFavoritosChanged});
 
   @override
   State<FavoritosScreen> createState() => _FavoritosScreenState();
@@ -172,6 +173,9 @@ class _FavoritosScreenState extends State<FavoritosScreen> {
                                   produto.favorito = false;
                                 });
                                 
+                                // Notificar a tela principal sobre a mudança
+                                widget.onFavoritosChanged?.call();
+                                
                                 messenger.showSnackBar(
                                   SnackBar(
                                     content: Row(
@@ -237,6 +241,9 @@ class _FavoritosScreenState extends State<FavoritosScreen> {
         // Atualizar a tela
         if (!mounted) return;
         setState(() {});
+        
+        // Notificar a tela principal sobre a mudança
+        widget.onFavoritosChanged?.call();
       } catch (e) {
         // Se houver erro ao remover favoritos, apenas mostrar aviso
         if (!mounted) return;
@@ -264,7 +271,9 @@ class _FavoritosScreenState extends State<FavoritosScreen> {
           children: [
             Icon(Icons.shopping_cart, color: Colors.white),
             SizedBox(width: 8),
-            Text('${favoritos.length} ${favoritos.length == 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho e removidos dos favoritos!'),
+            Expanded(
+              child: Text('${favoritos.length} ${favoritos.length == 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho e removidos dos favoritos!'),
+            ),
           ],
         ),
         backgroundColor: Colors.green.shade600,

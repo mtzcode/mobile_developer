@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 class ConstWidgets {
   // Espaçamentos
   static const SizedBox height8 = SizedBox(height: 8);
+  static const SizedBox height12 = SizedBox(height: 12);
   static const SizedBox height16 = SizedBox(height: 16);
+  static const SizedBox height18 = SizedBox(height: 18);
   static const SizedBox height24 = SizedBox(height: 24);
   static const SizedBox height32 = SizedBox(height: 32);
-  static const SizedBox height18 = SizedBox(height: 18);
   
   static const SizedBox width8 = SizedBox(width: 8);
   static const SizedBox width12 = SizedBox(width: 12);
@@ -144,4 +145,4 @@ class ProductConstWidgets {
       ),
     );
   }
-} 
+}

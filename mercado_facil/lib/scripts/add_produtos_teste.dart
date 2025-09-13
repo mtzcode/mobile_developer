@@ -1,20 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
 /// Script para adicionar produtos de teste no Firestore
 Future<void> adicionarProdutosTeste() async {
   try {
-    debugPrint('🔄 Adicionando produtos de teste...');
+    // Adicionando produtos de teste
     
     final firestore = FirebaseFirestore.instance;
     final produtosCollection = firestore.collection('produtos');
     
     // Verificar se já existem produtos
     final snapshot = await produtosCollection.get();
-    debugPrint('📊 Produtos existentes: ${snapshot.docs.length}');
+    // Verificando produtos existentes
     
     if (snapshot.docs.isNotEmpty) {
-      debugPrint('✅ Já existem produtos no Firestore');
+      // Já existem produtos no Firestore
       return;
     }
     
@@ -113,13 +112,12 @@ Future<void> adicionarProdutosTeste() async {
     for (int i = 0; i < produtosTeste.length; i++) {
       final produto = produtosTeste[i];
       await produtosCollection.add(produto);
-      debugPrint('✅ Produto ${i + 1} adicionado: ${produto['nome']}');
+      // Produto adicionado
     }
     
-    debugPrint('🎉 Todos os produtos de teste foram adicionados com sucesso!');
+    // Produtos de teste adicionados com sucesso
     
-  } catch (e, stackTrace) {
-    debugPrint('❌ Erro ao adicionar produtos de teste: $e');
-    debugPrint('Stack trace: $stackTrace');
+  } catch (e) {
+    // Erro ao adicionar produtos de teste
   }
 }

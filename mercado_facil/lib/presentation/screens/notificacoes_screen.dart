@@ -435,13 +435,6 @@ class _NotificacoesScreenState extends ConsumerState<NotificacoesScreen> with Ti
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            tooltip: 'Teste FCM',
-            onPressed: () {
-              Navigator.pushNamed(context, '/notification-test');
-            },
-          ),
           if (_tabController.index == 1)
             IconButton(
               icon: const Icon(Icons.clear_all),

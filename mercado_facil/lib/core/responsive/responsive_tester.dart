@@ -280,7 +280,7 @@ class _ResponsiveTesterState extends State<ResponsiveTester> {
     });
     
     // Log das dimensões aplicadas
-    debugPrint('Dimensões aplicadas: ${width.toStringAsFixed(0)}x${height.toStringAsFixed(0)}');
+    // Dimensões aplicadas
   }
 
   void _setOrientation(Orientation orientation) {
@@ -288,16 +288,15 @@ class _ResponsiveTesterState extends State<ResponsiveTester> {
       _currentOrientation = orientation;
     });
     
-    debugPrint('Orientação alterada: ${orientation.name}');
+    // Orientação alterada
   }
 
   void _generateReport() {
     final deviceInfo = ResponsiveBreakpoints.getDeviceInfo(context);
-    final report = _generateResponsiveReport(deviceInfo);
+    _generateResponsiveReport(deviceInfo);
     
     // Em um ambiente real, isso seria salvo ou exibido
-    debugPrint('=== RELATÓRIO RESPONSIVO ===');
-    debugPrint(report);
+    // Relatório responsivo gerado
     
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -314,7 +313,7 @@ class _ResponsiveTesterState extends State<ResponsiveTester> {
       _currentOrientation = Orientation.portrait;
     });
     
-    debugPrint('Configurações resetadas para padrão');
+    // Configurações resetadas para padrão
   }
 
   String _generateResponsiveReport(DeviceInfo deviceInfo) {
@@ -431,4 +430,4 @@ mixin ResponsiveTestingMixin {
     final fontSize = DynamicFontSizes.getBodyLarge(context);
     return fontSize > 0;
   }
-} 
+}

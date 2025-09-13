@@ -39,28 +39,28 @@ class ProdutoCard extends StatelessWidget {
             children: [
               Center(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: CachedNetworkImage(
-                    imageUrl: produto.imagemUrl,
-                    height: 180,
-                    width: 180,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
+                    borderRadius: BorderRadius.circular(16),
+                    child: CachedNetworkImage(
+                      imageUrl: produto.imagemUrl,
                       height: 180,
                       width: 180,
-                      color: colorScheme.tertiary.withValues(alpha: 0.1),
-                      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        height: 180,
+                        width: 180,
+                        color: colorScheme.tertiary.withValues(alpha: 0.1),
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        height: 180,
+                        width: 180,
+                        color: colorScheme.tertiary.withValues(alpha: 0.15),
+                        child: Icon(Icons.image, color: colorScheme.tertiary, size: 60),
+                      ),
+                      memCacheWidth: 400,
+                      memCacheHeight: 400,
                     ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 180,
-                      width: 180,
-                      color: colorScheme.tertiary.withValues(alpha: 0.15),
-                      child: Icon(Icons.image, color: colorScheme.tertiary, size: 60),
-                    ),
-                    memCacheWidth: 400,
-                    memCacheHeight: 400,
                   ),
-                ),
               ),
               const SizedBox(height: 18),
               Text(
@@ -68,6 +68,18 @@ class ProdutoCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
+              if (produto.codigoBarras != null && produto.codigoBarras!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'EAN: ${produto.codigoBarras}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontFamily: 'monospace',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const SizedBox(height: 8),
               if (produto.precoPromocional != null)
                 Column(
@@ -111,6 +123,32 @@ class ProdutoCard extends StatelessWidget {
                   style: const TextStyle(fontSize: 15, color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
+              if (produto.codigoBarras != null && produto.codigoBarras!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.qr_code, size: 18, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Código: ${produto.codigoBarras}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -165,17 +203,31 @@ class ProdutoCard extends StatelessWidget {
                       color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: produto.imagemUrl.isNotEmpty
-                        ? Image.network(
-                            produto.imagemUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: produto.imagemUrl.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: produto.imagemUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey.shade50,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Center(
+                                child: Icon(Icons.image, color: colorScheme.primary, size: 32),
+                              ),
+                              memCacheWidth: 300,
+                              memCacheHeight: 300,
+                            )
+                          : Center(
                               child: Icon(Icons.image, color: colorScheme.primary, size: 32),
                             ),
-                          )
-                        : Center(
-                            child: Icon(Icons.image, color: colorScheme.primary, size: 32),
-                          ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -303,21 +355,36 @@ class ProdutoCard extends StatelessWidget {
               Positioned(
                 top: 10,
                 right: 10,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: onToggleFavorito,
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: Icon(
-                        produto.favorito == true
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: produto.favorito == true
-                            ? Colors.red.shade800
-                            : Colors.grey.shade400,
-                        size: 22,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: onToggleFavorito,
+                      child: Center(
+                        child: Icon(
+                          produto.favorito == true
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: produto.favorito == true
+                              ? Colors.red.shade800
+                              : Colors.grey.shade600,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
@@ -325,7 +392,7 @@ class ProdutoCard extends StatelessWidget {
               ),
           ],
         ),
-        ),
+      ),
       ),
     );
   }

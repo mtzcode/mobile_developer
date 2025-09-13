@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../data/services/produtos_service.dart';
 import '../../data/services/firestore_service.dart';
 import '../widgets/produto_card.dart';
-import 'package:provider/provider.dart';
 import '../../data/services/carrinho_provider.dart';
 import '../../data/services/user_provider.dart';
 import '../../data/models/produto.dart';
 import 'ofertas_screen.dart';
 import 'favoritos_screen.dart';
 import '../../core/utils/snackbar_utils.dart';
+import '../../utils/clear_cache.dart';
 
 class ProdutosScreen extends StatefulWidget {
   const ProdutosScreen({super.key});
@@ -21,18 +22,15 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _categoriaScrollController = ScrollController();
   String _searchQuery = '';
-  int _categoriaSelecionada = 0;
-  List<String> categorias = ['Todos'];
-  List<String> _categorias = ['Todos'];
-  String _categoriaFiltro = 'Todos';
-  bool _isLoading = true;
+  List<String> _categorias = ['TODOS'];
+  String _categoriaSelecionada = 'TODOS';
   List<Produto> _produtosExibidos = [];
-  List<Produto> _todosProdutos = [];
+  Stream<List<Produto>>? _produtosStream;
 
   @override
   void initState() {
     super.initState();
-    _carregarProdutos();
+    _inicializarStream();
     
     // Carregar dados do usuário após o build inicial
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,118 +38,73 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
     });
   }
 
+  void _inicializarStream() {
+    _produtosStream = ProdutosService.getProdutosStream();
+  }
+
+  List<Produto> _aplicarFiltros(List<Produto> produtos) {
+    var produtosFiltrados = produtos;
+
+    // Filtrar por categoria
+    if (_categoriaSelecionada != 'TODOS') {
+      produtosFiltrados = produtosFiltrados
+          .where((produto) => produto.categoria == _categoriaSelecionada)
+          .toList();
+    }
+
+    // Filtrar por busca
+     if (_searchQuery.isNotEmpty) {
+       produtosFiltrados = produtosFiltrados
+           .where((produto) =>
+               produto.nome.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+               (produto.descricao?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false))
+           .toList();
+     }
+
+    return produtosFiltrados;
+  }
+
+  void _atualizarProdutosLocais(List<Produto> produtos) {
+    if (!mounted) return;
+    
+    setState(() {
+      _produtosExibidos = _aplicarFiltros(produtos);
+      _categorias = ['TODOS', ...produtos.map((p) => p.categoria).where((c) => c != null).cast<String>().toSet()];
+    });
+
+    // Carregar favoritos se usuário estiver logado
+    _carregarFavoritos();
+  }
+
+  Future<void> _carregarFavoritos() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.usuarioLogado?.id;
+    if (userId != null) {
+      try {
+        final firestoreService = FirestoreService();
+        final favoritos = await firestoreService.getFavoritos(userId);
+        // Favoritos carregados com sucesso
+        debugPrint('Favoritos carregados: ${favoritos.length}');
+      } catch (e) {
+        debugPrint('Erro ao carregar favoritos: $e');
+      }
+    }
+  }
+
   Future<void> _carregarDadosUsuario() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     await userProvider.carregarUsuarioLogado();
   }
 
-  Future<void> _carregarProdutos() async {
-    debugPrint('🔄 Iniciando carregamento de produtos...');
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      debugPrint('📡 Chamando ProdutosService.carregarProdutosComCache()...');
-      final produtos = await ProdutosService.carregarProdutosComCache();
-      debugPrint('✅ Produtos carregados: ${produtos.length} itens');
-      
-      // Carregar favoritos do usuário se estiver logado
-      if (!mounted) return;
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final userId = userProvider.usuarioLogado?.id;
-      
-      if (userId != null) {
-        try {
-          final firestoreService = FirestoreService();
-          final produtosComFavoritos = await firestoreService.getProdutosComFavoritos(userId);
-          debugPrint('💖 Favoritos carregados para usuário: $userId');
-          
-          if (mounted) {
-            setState(() {
-              _todosProdutos = produtosComFavoritos;
-              _produtosExibidos = produtosComFavoritos;
-              _atualizarCategorias(produtosComFavoritos);
-              _isLoading = false;
-            });
-            debugPrint('🎯 Estado atualizado - produtos com favoritos: ${produtosComFavoritos.length}');
-          }
-        } catch (e) {
-          debugPrint('⚠️ Erro ao carregar favoritos, usando produtos sem favoritos: $e');
-          if (mounted) {
-            setState(() {
-              _todosProdutos = produtos;
-              _produtosExibidos = produtos;
-              _atualizarCategorias(produtos);
-              _isLoading = false;
-            });
-          }
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _todosProdutos = produtos;
-            _produtosExibidos = produtos;
-            _atualizarCategorias(produtos);
-            _isLoading = false;
-          });
-          debugPrint('🎯 Estado atualizado - produtos: ${produtos.length}');
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ Erro ao carregar produtos: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        showAppSnackBar(
-          context,
-          'Erro ao carregar produtos: $e',
-          icon: Icons.error,
-          backgroundColor: Colors.red.shade600,
-        );
-      }
-    }
-  }
+  // Método removido - agora usando StreamBuilder para atualizações em tempo real
 
-  void _atualizarCategorias(List<Produto> produtos) {
-    // Extrair categorias únicas dos produtos ativos
-    final categoriasUnicas = <String>{'Todos'};
-    
-    for (final produto in produtos) {
-      if (produto.categoria != null && produto.categoria!.isNotEmpty) {
-        categoriasUnicas.add(produto.categoria!);
-      }
-    }
-    
-    categorias = categoriasUnicas.toList();
-    _categorias = List.from(categorias);
-    
-    debugPrint('📂 Categorias atualizadas: $_categorias');
-  }
+
 
   void _selecionarCategoria(String? categoria) {
     setState(() {
-      _categoriaFiltro = categoria ?? 'Todos';
-      _categoriaSelecionada = _categorias.indexOf(_categoriaFiltro);
+      _categoriaSelecionada = categoria ?? 'TODOS';
       _filtrarProdutos();
     });
-    
-    // Scroll horizontal automático para a categoria selecionada
-    _scrollToCategory(_categoriaSelecionada);
-  }
-  
-  void _scrollToCategory(int index) {
-    if (_categoriaScrollController.hasClients) {
-      const itemWidth = 120.0; // Largura aproximada de cada chip
-      final scrollPosition = (index * itemWidth) - (MediaQuery.of(context).size.width / 2) + (itemWidth / 2);
-      
-      _categoriaScrollController.animateTo(
-        scrollPosition.clamp(0.0, _categoriaScrollController.position.maxScrollExtent),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
   }
 
   void _buscarProdutos(String query) {
@@ -162,23 +115,10 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
   }
 
   void _filtrarProdutos() {
-    List<Produto> produtosFiltrados = _todosProdutos;
-
-    // Filtrar por categoria
-    if (_categoriaSelecionada > 0) {
-      final categoriaSelecionada = categorias[_categoriaSelecionada];
-      produtosFiltrados = produtosFiltrados.where((produto) => 
-        produto.categoria == categoriaSelecionada).toList();
-    }
-
-    // Filtrar por busca
-    if (_searchQuery.isNotEmpty) {
-      produtosFiltrados = produtosFiltrados.where((produto) => 
-        produto.nome.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
-    }
-
+    // Este método agora é tratado pelo StreamBuilder
+    // A filtragem é feita em tempo real no método _aplicarFiltros
     setState(() {
-      _produtosExibidos = produtosFiltrados;
+      // Força a reconstrução do widget para aplicar os filtros
     });
   }
 
@@ -206,8 +146,42 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
           ),
         ),
         actions: [
-          // Indicador de cache
-          // REMOVIDO: IconButton de status de cache
+          // Botão temporário para limpar cache
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            tooltip: 'Limpar Cache',
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                await ClearCacheUtil.clearAllCaches();
+                if (mounted) {
+                  _inicializarStream();
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text('Cache limpo! Recarregando produtos...'),
+                        ],
+                      ),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao limpar cache: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+          ),
           Consumer<CarrinhoProvider>(
             builder: (context, carrinho, child) {
               int quantidade = carrinho.itens.fold(0, (soma, item) => soma + item.quantidade);
@@ -520,7 +494,13 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => FavoritosScreen(produtos: _produtosExibidos),
+                        builder: (context) => FavoritosScreen(
+                          produtos: _produtosExibidos,
+                          onFavoritosChanged: () {
+                            // Recarregar produtos para atualizar estado dos favoritos
+                            _inicializarStream();
+                          },
+                        ),
                       ),
                     );
                   },
@@ -617,7 +597,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.teal.withValues(alpha: 0.1),
+                  color: Colors.teal.withAlpha(26),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.help_outline, color: Colors.teal, size: 20),
@@ -633,7 +613,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.cyan.withValues(alpha: 0.1),
+                  color: Colors.cyan.withAlpha(26),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.info_outline, color: Colors.cyan, size: 20),
@@ -649,7 +629,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.pink.withValues(alpha: 0.1),
+                  color: Colors.pink.withAlpha(26),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.star_outline, color: Colors.pink, size: 20),
@@ -700,7 +680,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Colors.black.withAlpha(13),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -740,7 +720,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: Colors.grey.withValues(alpha: 0.2),
+                    color: Colors.grey.withAlpha(51),
                     width: 1,
                   ),
                 ),
@@ -770,7 +750,7 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
               itemCount: _categorias.length,
               itemBuilder: (context, index) {
                 final categoria = _categorias[index];
-                final isSelected = _categoriaFiltro == categoria;
+                final isSelected = _categoriaSelecionada == categoria;
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: AnimatedContainer(
@@ -791,11 +771,11 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                       selectedColor: colorScheme.primary,
                       checkmarkColor: Colors.white,
                       side: BorderSide(
-                        color: isSelected ? colorScheme.primary : Colors.grey.withValues(alpha: 0.3),
+                        color: isSelected ? colorScheme.primary : Colors.grey.withAlpha(77),
                         width: 1.5,
                       ),
                       elevation: isSelected ? 4 : 0,
-                      shadowColor: colorScheme.primary.withValues(alpha: 0.3),
+                      shadowColor: colorScheme.primary.withAlpha(77),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
                   ),
@@ -805,10 +785,13 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
           ),
           const SizedBox(height: 20),
           
-          // Grade de produtos moderna
+          // Grade de produtos moderna com StreamBuilder
           Expanded(
-            child: _isLoading
-                ? Center(
+            child: StreamBuilder<List<Produto>>(
+              stream: _produtosStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -825,41 +808,89 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                         ),
                       ],
                     ),
-                  )
-                : _produtosExibidos.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.search_off_rounded,
-                              size: 80,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Nenhum produto encontrado',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _searchQuery.isNotEmpty
-                                  ? 'Tente buscar por outro termo'
-                                  : 'Verifique os filtros aplicados',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ],
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 80,
+                          color: Colors.red[400],
                         ),
-                      )
-                    : Padding(
+                        const SizedBox(height: 24),
+                        Text(
+                          'Erro ao carregar produtos',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _inicializarStream();
+                            });
+                          },
+                          child: const Text('Tentar novamente'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final produtos = snapshot.data ?? [];
+                
+                // Atualizar produtos locais quando receber dados do stream
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _atualizarProdutosLocais(produtos);
+                  }
+                });
+
+                final produtosFiltrados = _aplicarFiltros(produtos);
+
+                if (produtosFiltrados.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off_rounded,
+                          size: 80,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Nenhum produto encontrado',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _searchQuery.isNotEmpty
+                              ? 'Tente buscar por outro termo'
+                              : 'Verifique os filtros aplicados',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: LayoutBuilder(
                           builder: (context, constraints) {
@@ -897,9 +928,9 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 16,
                               ),
-                          itemCount: _produtosExibidos.length,
+                          itemCount: produtosFiltrados.length,
                           itemBuilder: (context, index) {
-                            final produto = _produtosExibidos[index];
+                            final produto = produtosFiltrados[index];
                             return ProdutoCard(
                               produto: produto,
                               onAdicionarAoCarrinho: () {
@@ -969,8 +1000,10 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                             );
                           },
                         ),
-                      ),
-          ),
+                      );
+                },
+              ),
+            ),
         ],
       ),
     );

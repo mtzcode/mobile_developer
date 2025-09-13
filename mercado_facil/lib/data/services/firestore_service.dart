@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/produto.dart';
-import 'produtos_service.dart';
+import '../../core/utils/logger.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -40,6 +40,36 @@ class FirestoreService {
     } catch (e) {
       throw Exception('Erro ao carregar produtos');
     }
+  }
+
+  // Stream para atualizações em tempo real dos produtos
+  Stream<List<Produto>> getProdutosStream() {
+    return _produtos.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) return null;
+        return Produto(
+          id: doc.id,
+          nome: data['nome'] ?? '',
+          preco: (data['preco'] ?? 0).toDouble(),
+          imagemUrl: data['imagemUrl'] ?? '',
+          descricao: data['descricao'] ?? '',
+          categoria: data['categoria'] ?? '',
+          destaque: data['destaque'] ?? false,
+          precoPromocional: data['precoPromocional']?.toDouble(),
+          favorito: false, // Será definido separadamente
+          estoque: data['estoque'] ?? 0,
+          disponivel: data['disponivel'] ?? true,
+          avaliacoes: data['avaliacoes'] != null 
+              ? List<double>.from(data['avaliacoes'].map((x) => (x as num).toDouble()))
+              : [],
+        );
+      }).whereType<Produto>().toList();
+    }).handleError((error) {
+      AppLogger.error('Erro no stream de produtos', error);
+      // Em caso de erro, retorna lista vazia para não quebrar o app
+      return <Produto>[];
+    });
   }
 
   // Buscar produtos por categoria
@@ -290,14 +320,9 @@ class FirestoreService {
     try {
       final produtos = await getProdutos();
       
-      // Se não há produtos no Firestore, usa fallback do ProdutosService
+      // Se não há produtos no Firestore, retorna lista vazia
       if (produtos.isEmpty) {
-        final produtosMock = ProdutosService.getProdutosMock();
-        final favoritos = await getFavoritos(userId);
-        
-        return produtosMock.map((produto) {
-          return produto.copyWith(favorito: favoritos.contains(produto.id));
-        }).toList();
+        return [];
       }
       
       final favoritos = await getFavoritos(userId);
@@ -306,13 +331,8 @@ class FirestoreService {
         return produto.copyWith(favorito: favoritos.contains(produto.id));
       }).toList();
     } catch (e) {
-      // Fallback para dados mock em caso de erro
-      try {
-        final produtosMock = ProdutosService.getProdutosMock();
-        return produtosMock;
-      } catch (fallbackError) {
-        return [];
-      }
+      // Em caso de erro, retorna lista vazia
+      return [];
     }
   }
 

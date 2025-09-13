@@ -4,16 +4,23 @@ import '../../core/utils/logger.dart';
 import '../models/usuario.dart';
 import '../models/produto.dart';
 import '../models/carrinho_item.dart';
+import '../../core/config/environment_config.dart';
 
 /// Serviço responsável pelo envio de emails de notificação
 /// 
 /// Este serviço integra com APIs de email (SendGrid, Mailgun, etc.)
 /// para enviar notificações por email baseadas nas preferências do usuário.
 class EmailService {
-  static const String _baseUrl = 'https://api.sendgrid.v3';
-  static const String _apiKey = 'SG.YOUR_SENDGRID_API_KEY'; // Configurar no .env
-  static const String _fromEmail = 'noreply@mercadofacil.com';
-  static const String _fromName = 'Mercado Fácil';
+  static const String _baseUrl = 'https://api.sendgrid.com/v3/mail/send';
+  
+  // Configurações obtidas do EnvironmentConfig
+  static String get _apiKey => EnvironmentConfig.sendGridApiKey;
+  static String get _fromEmail => EnvironmentConfig.sendGridFromEmail;
+  static String get _fromName => EnvironmentConfig.sendGridFromName;
+  static bool get _emailEnabled => EnvironmentConfig.emailNotificationsEnabled;
+  
+  /// Verifica se o serviço de email está configurado corretamente
+  static bool get isConfigured => EnvironmentConfig.isEmailConfigurationValid;
 
   /// Envia email de produto favorito em promoção
   /// 
@@ -21,6 +28,12 @@ class EmailService {
   /// [produto] - Produto que entrou em promoção
   Future<bool> enviarEmailFavoritoPromocao(Usuario usuario, Produto produto) async {
     try {
+      // Verifica se o email está habilitado e configurado
+      if (!_emailEnabled || !isConfigured) {
+        AppLogger.warning('Email desabilitado ou não configurado. Pulando envio.');
+        return false;
+      }
+      
       AppLogger.info('Enviando email de favorito em promoção para ${usuario.email}');
       
       final subject = '🔥 Seu produto favorito está em oferta!';
@@ -48,6 +61,12 @@ class EmailService {
     double totalCarrinho
   ) async {
     try {
+      // Verifica se o email está habilitado e configurado
+      if (!_emailEnabled || !isConfigured) {
+        AppLogger.warning('Email desabilitado ou não configurado. Pulando envio.');
+        return false;
+      }
+      
       AppLogger.info('Enviando email de lembrete de carrinho para ${usuario.email}');
       
       final subject = '🛒 Você esqueceu alguns itens no seu carrinho';
@@ -71,6 +90,12 @@ class EmailService {
   /// [categoria] - Categoria do produto
   Future<bool> enviarEmailNovoProduto(Usuario usuario, Produto produto, String categoria) async {
     try {
+      // Verifica se o email está habilitado e configurado
+      if (!_emailEnabled || !isConfigured) {
+        AppLogger.warning('Email desabilitado ou não configurado. Pulando envio.');
+        return false;
+      }
+      
       AppLogger.info('Enviando email de novo produto para ${usuario.email}');
       
       final subject = '🆕 Novo produto disponível: ${produto.nome}';
@@ -100,6 +125,12 @@ class EmailService {
     String tipo
   ) async {
     try {
+      // Verifica se o email está habilitado e configurado
+      if (!_emailEnabled || !isConfigured) {
+        AppLogger.warning('Email desabilitado ou não configurado. Pulando envio.');
+        return false;
+      }
+      
       AppLogger.info('Enviando email de notificação para ${usuario.email}');
       
       final htmlContent = _buildNotificacaoGenericaHtml(usuario, titulo, mensagem, tipo);

@@ -40,6 +40,9 @@ class Produto {
   /// Lista de avaliações do produto
   final List<double> avaliacoes;
 
+  /// Código de barras do produto (opcional)
+  final String? codigoBarras;
+
   /// Construtor do Produto
   /// 
   /// [id] - Identificador único obrigatório
@@ -54,6 +57,7 @@ class Produto {
   /// [estoque] - Quantidade em estoque (padrão: 0)
   /// [disponivel] - Disponibilidade do produto (padrão: true)
   /// [avaliacoes] - Lista de avaliações (padrão: lista vazia)
+  /// [codigoBarras] - Código de barras do produto (opcional)
   Produto({
     required this.id,
     required this.nome,
@@ -67,6 +71,7 @@ class Produto {
     this.estoque = 0,
     this.disponivel = true,
     this.avaliacoes = const [],
+    this.codigoBarras,
   }) : favorito = favorito ?? false;
 
   /// Cria uma cópia do produto com campos modificados.
@@ -86,6 +91,7 @@ class Produto {
   /// [estoque] - Nova quantidade em estoque (opcional)
   /// [disponivel] - Nova disponibilidade (opcional)
   /// [avaliacoes] - Nova lista de avaliações (opcional)
+  /// [codigoBarras] - Novo código de barras (opcional)
   /// 
   /// Retorna uma nova instância de [Produto] com os campos modificados.
   Produto copyWith({
@@ -101,6 +107,7 @@ class Produto {
     int? estoque,
     bool? disponivel,
     List<double>? avaliacoes,
+    String? codigoBarras,
   }) {
     return Produto(
       id: id ?? this.id,
@@ -115,6 +122,7 @@ class Produto {
         estoque: estoque ?? this.estoque,
         disponivel: disponivel ?? this.disponivel,
         avaliacoes: avaliacoes ?? this.avaliacoes,
+        codigoBarras: codigoBarras ?? this.codigoBarras,
     );
   }
 
@@ -138,6 +146,7 @@ class Produto {
       'estoque': estoque,
       'disponivel': disponivel,
       'avaliacoes': avaliacoes,
+      'codigoBarras': codigoBarras,
     };
   }
 
@@ -156,9 +165,9 @@ class Produto {
       nome: map['nome'] ?? '',
       preco: (map['preco'] ?? 0.0).toDouble(),
       imagemUrl: map['imagemUrl'] ?? '',
-      descricao: map['descricao'],
-      categoria: map['categoria'],
-      destaque: map['destaque'],
+      descricao: map['descricao'] is String ? map['descricao'] : null,
+      categoria: map['categoria'] is String ? map['categoria'] : null,
+      destaque: map['destaque'] is String ? map['destaque'] : null,
       precoPromocional: map['precoPromocional'] != null 
           ? (map['precoPromocional'] as num).toDouble() 
           : null,
@@ -168,6 +177,7 @@ class Produto {
       avaliacoes: map['avaliacoes'] != null 
           ? List<double>.from(map['avaliacoes'].map((x) => (x as num).toDouble()))
           : [],
+      codigoBarras: map['codigoBarras'] is String ? map['codigoBarras'] : null,
     );
   }
 

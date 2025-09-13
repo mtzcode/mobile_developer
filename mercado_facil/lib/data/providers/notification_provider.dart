@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../core/utils/logger.dart';
 import '../services/notification_service.dart';
+import 'user_provider_riverpod.dart';
 
 /// Estado das notificações
 class NotificationState {
@@ -106,12 +107,13 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         'channels': {
           'push': settingsModel.pushEnabled,
           'email': settingsModel.emailEnabled,
-  
         },
         'types': {
           'orderUpdates': settingsModel.orderUpdates,
           'promotions': settingsModel.promotions,
           'systemNotifications': settingsModel.systemNotifications,
+          'favoritePromotions': settingsModel.favoritePromotions,
+          'cartReminders': settingsModel.cartReminders,
         },
       };
       
@@ -127,8 +129,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
   /// Manipula mensagem recebida em foreground
   void _handleMessageReceived(RemoteMessage message) {
-    AppLogger.info('Nova notificação recebida: ${message.notification?.title}');
-    
     // Atualizar lista de notificações
     refreshNotifications();
     
@@ -138,8 +138,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
   /// Manipula quando uma notificação é tocada
   void _handleMessageTapped(RemoteMessage message) {
-    AppLogger.info('Notificação tocada: ${message.notification?.title}');
-    
     // Navegar para a tela apropriada baseado nos dados da notificação
     _navigateBasedOnNotification(message);
     
@@ -156,19 +154,15 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       switch (type) {
         case 'pedido':
           // Navegar para tela de pedidos
-          AppLogger.info('Navegando para pedidos');
           break;
         case 'promocao':
           // Navegar para produtos em promoção
-          AppLogger.info('Navegando para promoções');
           break;
         case 'carrinho':
           // Navegar para carrinho
-          AppLogger.info('Navegando para carrinho');
           break;
         default:
           // Navegar para tela de notificações
-          AppLogger.info('Navegando para notificações');
           break;
       }
     } catch (e, stackTrace) {
@@ -196,7 +190,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     try {
       await _service.markNotificationAsRead(notificationId);
       await refreshNotifications();
-      AppLogger.info('Notificação marcada como lida: $notificationId');
     } catch (e, stackTrace) {
       AppLogger.error('Erro ao marcar notificação como lida', e, stackTrace);
     }
@@ -210,21 +203,21 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         notifications: [],
         unreadCount: 0,
       );
-      AppLogger.info('Histórico de notificações limpo');
     } catch (e, stackTrace) {
       AppLogger.error('Erro ao limpar histórico', e, stackTrace);
     }
   }
 
-  /// Atualiza as configurações de notificação
-  Future<void> updateSettings(Map<String, Map<String, bool>> newSettings) async {
+  /// Atualiza configurações de notificação (método legado)
+  @Deprecated('Use saveUserSettings instead')
+  Future<void> updateSettings(Map<String, Map<String, bool>> settings) async {
     try {
       state = state.copyWith(isLoading: true);
       
-      await _service.saveNotificationSettings(newSettings);
+      await _service.saveNotificationSettings(settings);
       
       state = state.copyWith(
-        settings: newSettings,
+        settings: settings,
         isLoading: false,
       );
       
@@ -235,6 +228,92 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         isLoading: false,
         error: 'Erro ao salvar configurações: $e',
       );
+    }
+  }
+
+  /// Salva configurações do usuário usando o novo sistema
+  Future<void> saveUserSettings(String userId, Map<String, dynamic> settingsData) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      
+      // Converter Map para NotificationSettings
+      final settingsModel = await _service.getNotificationSettings(userId);
+      final updatedSettings = settingsModel.copyWith(
+        pushEnabled: settingsData['pushEnabled'] ?? settingsModel.pushEnabled,
+        emailEnabled: settingsData['emailEnabled'] ?? settingsModel.emailEnabled,
+        orderUpdates: settingsData['orderUpdates'] ?? settingsModel.orderUpdates,
+        promotions: settingsData['promotions'] ?? settingsModel.promotions,
+        systemNotifications: settingsData['systemNotifications'] ?? settingsModel.systemNotifications,
+        favoritePromotions: settingsData['favoritePromotions'] ?? settingsModel.favoritePromotions,
+        cartReminders: settingsData['cartReminders'] ?? settingsModel.cartReminders,
+      );
+      
+      await _service.saveUserNotificationSettings(userId, updatedSettings);
+      
+      // Atualizar estado local
+      final newSettings = <String, Map<String, bool>>{
+        'channels': {
+          'push': updatedSettings.pushEnabled,
+          'email': updatedSettings.emailEnabled,
+        },
+        'types': {
+          'orderUpdates': updatedSettings.orderUpdates,
+          'promotions': updatedSettings.promotions,
+          'systemNotifications': updatedSettings.systemNotifications,
+          'favoritePromotions': updatedSettings.favoritePromotions,
+          'cartReminders': updatedSettings.cartReminders,
+        },
+      };
+      
+      state = state.copyWith(
+        settings: newSettings,
+        isLoading: false,
+      );
+      
+      AppLogger.success('Configurações do usuário salvas com sucesso');
+    } catch (e, stackTrace) {
+      AppLogger.error('Erro ao salvar configurações do usuário', e, stackTrace);
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Erro ao salvar configurações: $e',
+      );
+    }
+  }
+
+  /// Sincroniza configurações offline com Firestore
+  Future<void> syncUserSettings(String userId) async {
+    try {
+      await _service.syncNotificationSettings(userId);
+      // Recarregar configurações após sincronização
+      await _loadUserSettings(userId);
+      AppLogger.success('Configurações sincronizadas com sucesso');
+    } catch (e, stackTrace) {
+      AppLogger.error('Erro ao sincronizar configurações', e, stackTrace);
+    }
+  }
+
+  /// Carrega configurações específicas do usuário
+  Future<void> _loadUserSettings(String userId) async {
+    try {
+      final settingsModel = await _service.getNotificationSettings(userId);
+      
+      final settings = <String, Map<String, bool>>{
+        'channels': {
+          'push': settingsModel.pushEnabled,
+          'email': settingsModel.emailEnabled,
+        },
+        'types': {
+          'orderUpdates': settingsModel.orderUpdates,
+          'promotions': settingsModel.promotions,
+          'systemNotifications': settingsModel.systemNotifications,
+          'favoritePromotions': settingsModel.favoritePromotions,
+          'cartReminders': settingsModel.cartReminders,
+        },
+      };
+      
+      state = state.copyWith(settings: settings);
+    } catch (e, stackTrace) {
+      AppLogger.error('Erro ao carregar configurações do usuário', e, stackTrace);
     }
   }
 
@@ -249,7 +328,26 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       
       currentSettings[type]![channel] = enabled;
       
-      await updateSettings(currentSettings);
+      // Converter para Map e usar o novo método
+      final settingsData = {
+        'orderUpdates': currentSettings['orderUpdates']?['push'] ?? true,
+        'promotions': currentSettings['promotions']?['push'] ?? true,
+        'systemNotifications': currentSettings['systemNotifications']?['push'] ?? true,
+        'favoritePromotions': currentSettings['favoritePromotions']?['push'] ?? true,
+        'cartReminders': currentSettings['cartReminders']?['push'] ?? true,
+      };
+      
+      // Obter userId do provider de autenticação
+      final container = ProviderContainer();
+      final userState = container.read(userProvider);
+      final userId = userState.usuario?.id;
+      
+      if (userId != null) {
+        await saveUserSettings(userId, settingsData);
+      } else {
+        AppLogger.warning('Usuário não autenticado - não foi possível salvar configurações');
+      }
+      container.dispose();
     } catch (e, stackTrace) {
       AppLogger.error('Erro ao atualizar configuração do canal', e, stackTrace);
     }
@@ -259,7 +357,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> subscribeToTopic(String topic) async {
     try {
       await _service.subscribeToTopic(topic);
-      AppLogger.info('Subscrito ao tópico: $topic');
     } catch (e, stackTrace) {
       AppLogger.error('Erro ao subscrever ao tópico', e, stackTrace);
     }
@@ -269,7 +366,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _service.unsubscribeFromTopic(topic);
-      AppLogger.info('Removida subscrição do tópico: $topic');
     } catch (e, stackTrace) {
       AppLogger.error('Erro ao remover subscrição do tópico', e, stackTrace);
     }
@@ -280,7 +376,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     try {
       final newToken = await _service.refreshToken();
       state = state.copyWith(fcmToken: newToken);
-      AppLogger.info('Token FCM atualizado');
     } catch (e, stackTrace) {
       AppLogger.error('Erro ao atualizar token FCM', e, stackTrace);
     }

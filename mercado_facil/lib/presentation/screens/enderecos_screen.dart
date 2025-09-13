@@ -24,16 +24,27 @@ class _EnderecosScreenState extends State<EnderecosScreen> {
 
   Future<void> _definirComoPrincipal(Map<String, dynamic> endereco) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final usuario = userProvider.usuarioLogado;
     
     try {
-      // Definir como endereço principal
+      // Garantir que o endereço esteja na lista de endereços secundários
+      List<Map<String, dynamic>> enderecosAtualizados = [];
+      if (usuario?.enderecos != null) {
+        enderecosAtualizados.addAll(usuario!.enderecos!);
+      }
+      
+      // Verificar se o endereço já está na lista, se não estiver, adicionar
+      bool enderecoJaExiste = enderecosAtualizados.any((end) => _enderecosIguais(end, endereco));
+      if (!enderecoJaExiste) {
+        enderecosAtualizados.add(endereco);
+      }
+      
+      // Definir como endereço principal e manter na lista de endereços
       await userProvider.atualizarDadosUsuario({
         'endereco': endereco,
+        'enderecos': enderecosAtualizados,
         'dataAtualizacao': DateTime.now().toIso8601String(),
       });
-      
-      // Remover da lista de endereços secundários
-      await _removerEnderecoSecundario(endereco);
       
       if (mounted) {
         showAppSnackBar(

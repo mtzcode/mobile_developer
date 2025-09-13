@@ -179,8 +179,9 @@ class OptimizedProdutosProvider extends ChangeNotifier {
   /// Aplica filtros aos produtos
   void _aplicarFiltros() {
     _produtosFiltrados = _produtos.where((produto) {
-      // Filtro por nome
-      final matchNome = produto.nome.toLowerCase().contains(_searchQuery.toLowerCase());
+      // Filtro por nome ou código de barras
+      final matchNome = produto.nome.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                       (produto.codigoBarras != null && produto.codigoBarras!.contains(_searchQuery));
       
       // Filtro por categoria
       final matchCategoria = _categoriaFiltro == null || (produto.categoria == _categoriaFiltro);
@@ -242,4 +243,4 @@ class OptimizedProdutosProvider extends ChangeNotifier {
            _filtrarNovo ||
            _filtrarMaisVendido;
   }
-} 
+}

@@ -4,26 +4,39 @@ service cloud.firestore {
     
     // Regras para coleção de usuários
     match /usuarios/{userId} {
-      // Permitir leitura de todos os documentos para consultas de login
-      allow read: if request.auth != null;
+      // Permitir leitura apenas do próprio documento
+      allow read: if request.auth != null && request.auth.uid == userId;
       
-      // Permitir escrita apenas do próprio documento
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Permitir escrita apenas do próprio documento com validação de dados
+      allow write: if request.auth != null && 
+        request.auth.uid == userId &&
+        validateUserData(request.resource.data);
       
-      // Permitir criação de novos documentos (cadastro)
-      allow create: if request.auth != null;
+      // Permitir criação de novos documentos (cadastro) com validação
+      allow create: if request.auth != null &&
+        request.auth.uid == userId &&
+        validateUserData(request.resource.data);
     }
     
     // Regras para coleção de produtos (leitura pública)
     match /produtos/{produtoId} {
       allow read: if true; // Leitura pública
-      allow write: if request.auth != null; // Escrita apenas para usuários autenticados
+      allow write: if false; // Escrita bloqueada - apenas via Admin SDK
+    }
+    
+    // Regras para coleção de categorias (leitura pública)
+    match /categorias/{categoriaId} {
+      allow read: if true; // Leitura pública
+      allow write: if false; // Escrita bloqueada - apenas via Admin SDK
     }
     
     // Regras para coleção de endereços
     match /enderecos/{enderecoId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read: if request.auth != null && 
+        resource.data.usuarioId == request.auth.uid;
+      allow write: if request.auth != null && 
+        request.resource.data.usuarioId == request.auth.uid &&
+        validateEnderecoData(request.resource.data);
     }
     
     // Regras para coleção de carrinhos (por usuário)
@@ -50,9 +63,33 @@ service cloud.firestore {
         resource.data.usuarioId == request.auth.uid;
     }
     
-    // Regras para outras coleções
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    // Regras para notificações do usuário
+    match /notificacoes/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Regras para favoritos do usuário
+    match /favoritos/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Funções de validação
+    function validateUserData(data) {
+      return data.keys().hasAll(['nome', 'email']) &&
+             data.nome is string &&
+             data.email is string &&
+             data.nome.size() > 0 &&
+             data.email.matches('.*@.*\..*');
+    }
+    
+    function validateEnderecoData(data) {
+      return data.keys().hasAll(['cep', 'logradouro', 'numero', 'bairro', 'uf', 'usuarioId']) &&
+             data.cep is string &&
+             data.logradouro is string &&
+             data.numero is string &&
+             data.bairro is string &&
+             data.uf is string &&
+             data.usuarioId is string;
     }
   }
-} 
+}

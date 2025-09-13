@@ -122,18 +122,36 @@ class OptimizedProdutoCard extends StatelessWidget {
   }
 
   Widget _buildProductName(ColorScheme colorScheme) {
-    return Semantics(
-      header: true,
-      child: Text(
-        produto.nome,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: colorScheme.secondary,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            produto.nome,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.secondary,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
+        if (produto.codigoBarras != null && produto.codigoBarras!.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            'EAN: ${produto.codigoBarras}',
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.grey,
+              fontFamily: 'monospace',
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
     );
   }
 
@@ -242,15 +260,37 @@ class OptimizedProdutoCard extends StatelessWidget {
     return Positioned(
       right: 8,
       top: 8,
-      child: GestureDetector(
-        onTap: onToggleFavorito,
-        child: Semantics(
-          label: produto.favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
-          button: true,
-          child: Icon(
-            produto.favorito ? Icons.favorite : Icons.favorite_border,
-            color: produto.favorito ? Colors.red : Colors.grey.shade400,
-            size: 28,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(19),
+            onTap: onToggleFavorito,
+            child: Semantics(
+              label: produto.favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
+              button: true,
+              child: Center(
+                child: Icon(
+                  produto.favorito ? Icons.favorite : Icons.favorite_border,
+                  color: produto.favorito ? Colors.red.shade800 : Colors.grey.shade600,
+                  size: 22,
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -343,6 +383,32 @@ class _ProductModal extends StatelessWidget {
               style: const TextStyle(fontSize: 15, color: Colors.black87),
               textAlign: TextAlign.center,
             ),
+          if (produto.codigoBarras != null && produto.codigoBarras!.isNotEmpty) ...[
+            ConstWidgets.height12,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.qr_code, size: 18, color: Colors.grey.shade600),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Código: ${produto.codigoBarras}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           ConstWidgets.height24,
           SizedBox(
             width: double.infinity,

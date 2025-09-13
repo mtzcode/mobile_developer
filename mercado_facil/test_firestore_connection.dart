@@ -1,27 +1,28 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'lib/firebase_options.dart';
+import 'lib/core/utils/logger.dart';
 
 void main() async {
-  print('🔄 Testando conexão com Firestore...');
+  AppLogger.info('🔄 Testando conexão com Firestore...');
   
   try {
     // Inicializar Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ Firebase inicializado');
+    AppLogger.info('✅ Firebase inicializado');
     
     // Testar conexão com Firestore
     final firestore = FirebaseFirestore.instance;
     
     // Verificar produtos existentes
-    print('📡 Buscando produtos...');
+    AppLogger.info('📡 Buscando produtos...');
     final snapshot = await firestore.collection('produtos').get();
-    print('📊 Produtos encontrados: ${snapshot.docs.length}');
+    AppLogger.info('📊 Produtos encontrados: ${snapshot.docs.length}');
     
     if (snapshot.docs.isEmpty) {
-      print('⚠️ Nenhum produto encontrado. Adicionando produtos de teste...');
+      AppLogger.warning('⚠️ Nenhum produto encontrado. Adicionando produtos de teste...');
       
       // Adicionar produtos de teste
       final produtosTeste = [
@@ -58,22 +59,22 @@ void main() async {
       
       for (int i = 0; i < produtosTeste.length; i++) {
         await firestore.collection('produtos').add(produtosTeste[i]);
-        print('✅ Produto ${i + 1} adicionado: ${produtosTeste[i]['nome']}');
+        AppLogger.info('✅ Produto ${i + 1} adicionado: ${produtosTeste[i]['nome']}');
       }
       
-      print('🎉 Produtos de teste adicionados!');
+      AppLogger.info('🎉 Produtos de teste adicionados!');
     } else {
-      print('✅ Produtos já existem no Firestore:');
+      AppLogger.info('✅ Produtos já existem no Firestore:');
       for (var doc in snapshot.docs.take(3)) {
         final data = doc.data();
-        print('  - ${data['nome']}: R\$ ${data['preco']}');
+        AppLogger.info('  - ${data['nome']}: R\$ ${data['preco']}');
       }
     }
     
-    print('🎯 Teste concluído com sucesso!');
+    AppLogger.info('🎯 Teste concluído com sucesso!');
     
   } catch (e, stackTrace) {
-    print('❌ Erro: $e');
-    print('Stack trace: $stackTrace');
+    AppLogger.error('❌ Erro: $e');
+    AppLogger.error('Stack trace: $stackTrace');
   }
 }

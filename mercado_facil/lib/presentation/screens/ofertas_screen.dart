@@ -2,17 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/produto.dart';
 import '../../data/services/carrinho_provider.dart';
+import '../../data/services/user_provider.dart';
+import '../../data/services/firestore_service.dart';
 import '../widgets/produto_card.dart';
 import '../../core/utils/snackbar_utils.dart';
 
-class OfertasScreen extends StatelessWidget {
+class OfertasScreen extends StatefulWidget {
   final List<Produto> produtos;
   const OfertasScreen({super.key, required this.produtos});
 
   @override
+  State<OfertasScreen> createState() => _OfertasScreenState();
+}
+
+class _OfertasScreenState extends State<OfertasScreen> {
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final ofertas = produtos.where((p) => p.destaque?.toLowerCase() == 'oferta').toList();
+    
+    // Filtrar ofertas com lógica mais abrangente
+    final ofertas = widget.produtos.where((p) {
+      // Verifica se tem destaque 'oferta' (case insensitive)
+      final temDestaqueOferta = p.destaque?.toLowerCase() == 'oferta';
+      // Verifica se está em promoção (tem preço promocional)
+      final temPromocao = p.precoPromocional != null && p.precoPromocional! < p.preco;
+      // Verifica se tem desconto significativo
+      final temDesconto = p.precoPromocional != null && p.precoPromocional! > 0;
+      
+      return temDestaqueOferta || temPromocao || temDesconto;
+    }).toList();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ofertas'),
@@ -22,9 +41,37 @@ class OfertasScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: ofertas.isEmpty
-            ? const Center(child: Text('Nenhum produto em oferta.'))
-            : LayoutBuilder(
+        child: widget.produtos.isEmpty
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Carregando ofertas...')
+                  ],
+                ),
+              )
+            : ofertas.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.local_offer_outlined, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'Nenhuma oferta disponível no momento',
+                          style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Volte em breve para conferir nossas promoções!',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  )
+                : LayoutBuilder(
                 builder: (context, constraints) {
                   int crossAxisCount;
                   double childAspectRatio;
@@ -68,9 +115,68 @@ class OfertasScreen extends StatelessWidget {
                         backgroundColor: Colors.green.shade600,
                       );
                     },
-                    onToggleFavorito: () {
-                      (context as Element).markNeedsBuild();
-                      produto.favorito = !produto.favorito;
+                    onToggleFavorito: () async {
+                      final userProvider = Provider.of<UserProvider>(context, listen: false);
+                      final userId = userProvider.usuarioLogado?.id;
+                      final messenger = ScaffoldMessenger.of(context);
+                      
+                      if (userId != null) {
+                        try {
+                          final firestoreService = FirestoreService();
+                          
+                          if (produto.favorito) {
+                            await firestoreService.removerFavorito(userId, produto.id);
+                            if (!mounted) return;
+                            setState(() {
+                              produto.favorito = false;
+                            });
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Icon(Icons.favorite_border, color: Colors.white),
+                                    SizedBox(width: 8),
+                                    Text('${produto.nome} removido dos favoritos!'),
+                                  ],
+                                ),
+                                backgroundColor: Colors.orange.shade600,
+                              ),
+                            );
+                          } else {
+                            await firestoreService.adicionarFavorito(userId, produto.id);
+                            if (!mounted) return;
+                            setState(() {
+                              produto.favorito = true;
+                            });
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Icon(Icons.favorite, color: Colors.white),
+                                    SizedBox(width: 8),
+                                    Text('${produto.nome} adicionado aos favoritos!'),
+                                  ],
+                                ),
+                                backgroundColor: Colors.red.shade600,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (!mounted) return;
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(Icons.error, color: Colors.white),
+                                  SizedBox(width: 8),
+                                  Text('Erro ao atualizar favoritos'),
+                                ],
+                              ),
+                              backgroundColor: Colors.red.shade600,
+                            ),
+                          );
+                        }
+                      }
                     },
                   );
                 },

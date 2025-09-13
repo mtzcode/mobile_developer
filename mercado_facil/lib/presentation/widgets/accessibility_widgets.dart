@@ -280,8 +280,8 @@ class AccessibilityWidgets {
 mixin AccessibilityMixin {
   /// Anuncia mudança para leitores de tela
   void announceForAccessibility(String message) {
-    // Fallback para debugPrint, pois SemanticsService pode não estar disponível
-    debugPrint('Accessibility Announcement: $message');
+    // Fallback para logs, pois SemanticsService pode não estar disponível
+  // Accessibility announcement made
   }
 
   /// Fornece feedback tátil
@@ -339,4 +339,4 @@ class AccessibilityConfig {
   static bool isTextSizeAdequate(double fontSize) {
     return fontSize >= minimumTextSize;
   }
-} 
+}

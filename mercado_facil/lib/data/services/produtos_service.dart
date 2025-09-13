@@ -2,6 +2,7 @@ import '../models/produto.dart';
 import 'cache_service.dart';
 import 'memory_cache_service.dart';
 import 'firestore_service.dart';
+import '../../core/utils/logger.dart';
 
 /// Serviço responsável por gerenciar produtos com estratégia de cache inteligente.
 /// 
@@ -49,17 +50,20 @@ class ProdutosService {
         id: '3',
         nome: 'Leite Integral',
         preco: 4.20,
+        precoPromocional: 3.79,
         imagemUrl: 'https://picsum.photos/150/150?random=3',
         categoria: 'Laticínios',
-        destaque: 'novo',
+        destaque: 'oferta',
         favorito: false,
       ),
       Produto(
         id: '4',
         nome: 'Pão de Forma',
         preco: 5.80,
+        precoPromocional: 4.99,
         imagemUrl: 'https://picsum.photos/150/150?random=4',
         categoria: 'Pães',
+        destaque: 'oferta',
         favorito: false,
       ),
       Produto(
@@ -83,17 +87,20 @@ class ProdutosService {
         id: '7',
         nome: 'Coca-Cola 2L',
         preco: 7.90,
+        precoPromocional: 6.99,
         imagemUrl: 'https://picsum.photos/150/150?random=7',
         categoria: 'Bebidas',
-        destaque: 'novo',
+        destaque: 'oferta',
         favorito: false,
       ),
       Produto(
         id: '8',
         nome: 'Sabão em Pó',
         preco: 12.50,
+        precoPromocional: 9.99,
         imagemUrl: 'https://picsum.photos/150/150?random=8',
         categoria: 'Limpeza',
+        destaque: 'oferta',
         favorito: false,
       ),
     ];
@@ -178,8 +185,9 @@ class ProdutosService {
         }
       }
       
-      // Último fallback: dados mock
-      return getProdutosMock();
+      // Se não há dados em cache e Firestore falhou, retorna lista vazia
+      // Não usa mais dados mock como fallback final
+      return [];
     }
   }
 
@@ -195,14 +203,34 @@ class ProdutosService {
     try {
       final produtosData = await _firestoreService.getProdutos();
       
-      if (produtosData.isEmpty) {
-        return getProdutosMock();
-      }
-
+      // Retorna os dados do Firestore, mesmo se estiver vazio
+      // Não usa mais fallback automático para dados mock
       return produtosData;
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Stream para atualizações em tempo real dos produtos.
+  /// 
+  /// Retorna um Stream que emite uma nova lista de produtos sempre que
+  /// há mudanças no Firestore, permitindo atualizações em tempo real.
+  /// Com fallback para dados mock em caso de erro.
+  /// 
+  /// Retorna [Stream<List<Produto>>] com atualizações em tempo real.
+  static Stream<List<Produto>> getProdutosStream() {
+    return _firestoreService.getProdutosStream().map((produtos) {
+      // Se não há produtos do Firebase, usa dados mock
+      if (produtos.isEmpty) {
+        AppLogger.info('Nenhum produto encontrado no Firebase, usando dados mock');
+        return getProdutosMock();
+      }
+      return produtos;
+    }).handleError((error) {
+      AppLogger.error('Erro ao carregar produtos do Firebase', error);
+      AppLogger.info('Usando dados mock como fallback');
+      return getProdutosMock();
+    });
   }
 
   /// Carrega produtos com paginação.
@@ -229,12 +257,9 @@ class ProdutosService {
       final end = (start + pageSize) > todos.length ? todos.length : (start + pageSize);
       return todos.sublist(start, end);
     } catch (e) {
-      // Fallback para dados mock paginados
-      final todos = getProdutosMock();
-      final start = (page - 1) * pageSize;
-      if (start >= todos.length) return [];
-      final end = (start + pageSize) > todos.length ? todos.length : (start + pageSize);
-      return todos.sublist(start, end);
+      // Se houver erro, retorna lista vazia
+      // Não usa mais dados mock como fallback
+      return [];
     }
   }
 
@@ -269,10 +294,8 @@ class ProdutosService {
         final start = page * pageSize;
         return start < todos.length;
       } catch (cacheError) {
-        // Fallback final: verifica nos dados mock
-        final todos = getProdutosMock();
-        final start = page * pageSize;
-        return start < todos.length;
+        // Se não há cache disponível, assume que não há mais produtos
+        return false;
       }
     }
   }
@@ -287,7 +310,7 @@ class ProdutosService {
     }
   }
 
-  // Buscar produtos por nome
+  // Buscar produtos por nome, categoria ou código de barras
   static Future<List<Produto>> buscarProdutos(String query, {bool forcarAtualizacao = false}) async {
     try {
       final produtos = await carregarProdutosComCache(forcarAtualizacao: forcarAtualizacao);
@@ -295,7 +318,8 @@ class ProdutosService {
       
       return produtos.where((produto) => 
         produto.nome.toLowerCase().contains(queryLower) ||
-        (produto.categoria?.toLowerCase().contains(queryLower) ?? false)
+        (produto.categoria?.toLowerCase().contains(queryLower) ?? false) ||
+        (produto.codigoBarras != null && produto.codigoBarras!.contains(query))
       ).toList();
     } catch (e) {
       return [];

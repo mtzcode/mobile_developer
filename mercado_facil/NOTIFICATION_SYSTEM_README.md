@@ -102,12 +102,36 @@ Este documento descreve o sistema completo de notificações multi-canal impleme
 
 ### 2. Configurações de Email (SendGrid)
 
+**IMPORTANTE**: Para que os emails funcionem, você precisa configurar as chaves do SendGrid:
+
+#### 2.1. Obter Chave da API SendGrid
+1. Acesse [SendGrid](https://sendgrid.com) e crie uma conta
+2. Vá em Settings > API Keys
+3. Crie uma nova API Key com permissões de envio de email
+4. Copie a chave gerada (formato: `SG.xxxxxxxxxx`)
+
+#### 2.2. Configurar no Projeto
+
+**Opção A: Arquivo .env (Recomendado)**
+```bash
+# Adicione no arquivo .env
+SENDGRID_API_KEY=SG.sua_chave_sendgrid_aqui
+SENDGRID_FROM_EMAIL=noreply@seudominio.com
+SENDGRID_FROM_NAME=Mercado Fácil
+```
+
+**Opção B: Direto no código (apenas para testes)**
 ```dart
-// Em email_service.dart
-static const String _apiKey = 'SG.your_sendgrid_api_key';
-static const String _fromEmail = 'noreply@mercadofacil.com';
+// Em lib/data/services/email_service.dart
+static const String _apiKey = 'SG.sua_chave_sendgrid_aqui';
+static const String _fromEmail = 'noreply@seudominio.com';
 static const String _fromName = 'Mercado Fácil';
 ```
+
+#### 2.3. Verificar Domínio de Envio
+- Configure um domínio verificado no SendGrid
+- Use um email do domínio verificado como remetente
+- Para testes, você pode usar emails sandbox do SendGrid
 
 
 
@@ -171,7 +195,39 @@ Acesse `/notification-admin` para:
 - Ver estatísticas em tempo real
 - Executar tarefas manualmente
 
-### 4. Envio Manual de Notificações
+### 4. Gerenciamento de Configurações do Usuário
+
+```dart
+// Carregar configurações do usuário
+final notificationService = NotificationService();
+final userId = 'user123';
+final settings = await notificationService.getNotificationSettings(userId);
+
+// Modificar configurações
+final newSettings = settings.copyWith(
+  emailEnabled: true,
+  pushEnabled: true,
+  promotions: false,
+  favoritePromotions: true,
+  cartReminders: true,
+);
+
+// Salvar configurações (persiste no Firestore + cache local)
+await notificationService.saveUserNotificationSettings(userId, newSettings);
+
+// Sincronizar configurações offline com Firestore
+await notificationService.syncNotificationSettings(userId);
+
+// Verificar se há configurações pendentes de sincronização
+final hasPending = await notificationService.hasPendingSync(userId);
+
+// Obter estatísticas para debug
+final stats = await notificationService.getSettingsStats(userId);
+print('Configurações no Firestore: ${stats['hasFirestoreSettings']}');
+print('Cache local: ${stats['hasLocalCache']}');
+```
+
+### 5. Envio Manual de Notificações
 
 ```dart
 // Exemplo de uso direto
@@ -276,8 +332,14 @@ static const Duration _weeklyTasksInterval = Duration(days: 7);
 ### Plataformas Suportadas
 
 - ✅ Android (FCM nativo)
-- ✅ Web (FCM via Service Worker)
+- ✅ Web (FCM via Service Worker) - **Limitações**: Apenas push notifications
 - ✅ Email (universal)
+
+**IMPORTANTE sobre Notificações Web:**
+- Push notifications funcionam apenas quando o usuário dá permissão
+- Emails NÃO são enviados automaticamente na versão web
+- Para testar emails, use a versão mobile ou configure um servidor backend
+- Service Worker precisa estar ativo para receber notificações em background
 
 
 ### Requisitos
@@ -303,6 +365,125 @@ String _buildFavoritePromotionEmailHtml(Usuario usuario, Produto produto, double
 ```
 
 
+
+## 💾 Persistência de Configurações
+
+### Como as Configurações são Armazenadas
+
+**IMPORTANTE**: As configurações de notificação são armazenadas de forma híbrida:
+
+#### 1. Configurações do Usuário (Persistentes)
+- **Local**: SharedPreferences (cache local)
+- **Remoto**: Firestore (vinculado ao usuário)
+- **Comportamento**: Mantidas entre builds e reinstalações
+
+#### 2. Configurações Temporárias (Cache)
+- **Local**: Memória da aplicação
+- **Comportamento**: Perdidas ao fechar o app
+
+### Por que as Configurações "Somem" ao Fazer Build?
+
+**Explicação**: Durante o desenvolvimento, as configurações podem ser perdidas por:
+
+1. **Hot Reload/Restart**: Limpa a memória, mas mantém SharedPreferences
+2. **Flutter Clean**: Remove cache local, mas mantém dados do Firestore
+3. **Reinstalação**: Remove SharedPreferences, mas dados do usuário ficam no Firestore
+4. **Logout/Login**: Recarrega configurações do servidor
+
+### Como Garantir Persistência
+
+```dart
+// As configurações são salvas automaticamente quando alteradas
+await notificationProvider.updateSettings(newSettings);
+
+// Para forçar sincronização com o servidor:
+await notificationService.syncUserSettings(userId);
+```
+
+## 🔧 Troubleshooting
+
+### Emails Não Chegam
+
+**Possíveis Causas:**
+1. **Chave SendGrid não configurada**
+   - Verifique se `SENDGRID_API_KEY` está no .env
+   - Confirme se a chave tem permissões de envio
+
+2. **Domínio não verificado**
+   - Configure sender authentication no SendGrid
+   - Use um email de domínio verificado
+
+3. **Configurações do usuário**
+   - Verifique se `emailEnabled: true` nas configurações
+   - Confirme se o tipo de notificação está ativo
+
+4. **Versão Web**
+   - Emails não funcionam na versão web sem backend
+   - Use a versão mobile para testar
+
+**Como Testar:**
+```dart
+// Teste manual de email
+final emailService = EmailService();
+final result = await emailService.enviarEmailTeste('seu@email.com');
+print('Email enviado: $result');
+```
+
+### Push Notifications Não Aparecem
+
+**Possíveis Causas:**
+1. **Permissões não concedidas**
+   - Solicite permissão: `await messaging.requestPermission()`
+   - Verifique nas configurações do dispositivo
+
+2. **Token FCM inválido**
+   - Token pode expirar ou mudar
+   - Implemente refresh automático
+
+3. **Service Worker (Web)**
+   - Verifique se `firebase-messaging-sw.js` está configurado
+   - Confirme se o service worker está ativo
+
+4. **App em background**
+   - Algumas configurações podem bloquear notificações
+   - Teste com app em foreground primeiro
+
+### Configurações Não Persistem
+
+**Soluções:**
+1. **Verificar login do usuário**
+   ```dart
+   final user = FirebaseAuth.instance.currentUser;
+   if (user == null) {
+     // Usuário não logado - configurações não serão salvas
+   }
+   ```
+
+2. **Forçar sincronização**
+   ```dart
+   // Salvar localmente E remotamente
+   await notificationService.saveSettingsLocal(settings);
+   await notificationService.saveSettingsRemote(userId, settings);
+   ```
+
+3. **Verificar permissões do Firestore**
+   - Confirme se as regras permitem escrita
+   - Verifique se o usuário está autenticado
+
+### Logs para Debug
+
+```dart
+// Ativar logs detalhados
+AppLogger.setLevel(LogLevel.debug);
+
+// Verificar status do sistema
+final status = await notificationScheduler.getSystemStatus();
+print('Status: $status');
+
+// Verificar configurações do usuário
+final settings = await notificationService.getNotificationSettings(userId);
+print('Configurações: $settings');
+```
 
 ## 🚀 Próximos Passos
 

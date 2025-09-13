@@ -3,7 +3,7 @@ import 'package:provider/provider.dart' as provider;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/logger.dart';
 import 'core/error/error_handler.dart';
@@ -67,11 +67,19 @@ void main() async {
     rethrow;
   }
   
-  // Configurar AppCheck (desabilitado temporariamente para debug)
-  // await FirebaseAppCheck.instance.activate(
-  //   androidProvider: AndroidProvider.debug,
-  //   appleProvider: AppleProvider.debug,
-  // );
+  // Configurar AppCheck para segurança adicional
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug, // Use AndroidProvider.playIntegrity em produção
+      appleProvider: AppleProvider.debug, // Use AppleProvider.appAttest em produção
+      // webProvider desabilitado temporariamente para desenvolvimento
+      // webProvider: ReCaptchaV3Provider('sua_chave_recaptcha_aqui'),
+    );
+    AppLogger.success('Firebase App Check ativado');
+  } catch (e, stackTrace) {
+    AppLogger.error('Erro ao ativar Firebase App Check', e, stackTrace);
+    // App Check é opcional, não deve impedir o funcionamento do app
+  }
 
   AppLogger.info('Aplicativo iniciado com sucesso');
   runApp(const MyApp());

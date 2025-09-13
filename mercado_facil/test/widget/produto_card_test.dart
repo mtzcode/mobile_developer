@@ -18,6 +18,7 @@ void main() {
         destaque: 'oferta',
         precoPromocional: 4.99,
         favorito: false,
+        codigoBarras: '7891234567890',
       );
     });
 
@@ -151,5 +152,18 @@ void main() {
       // Verifica se a descrição aparece no modal
       expect(find.text('Banana prata fresca'), findsOneWidget);
     });
+
+    testWidgets('deve exibir código de barras no modal quando disponível', (WidgetTester tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Toca no card para abrir o modal
+      await tester.tap(find.byType(Card));
+      await tester.pumpAndSettle();
+
+      // Verifica se o código de barras aparece no modal
+      expect(find.text('Código: 7891234567890'), findsOneWidget);
+      expect(find.byIcon(Icons.qr_code), findsOneWidget);
+    });
   });
-} 
+}
